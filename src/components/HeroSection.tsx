@@ -56,7 +56,7 @@ const HeroSection = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.2, delay: 0.15 }}
           >
-            <Button variant="hero" size="xl">
+            <Button variant="hero" size="xl" onClick={() => window.location.href = '/onboarding'}>
               Start Your 7-Day Free Trial
             </Button>
             <Button
