@@ -16,7 +16,7 @@ const Navbar = () => {
           <a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors font-body">Features</a>
           <a href="#pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors font-body">Pricing</a>
           <a href="#testimonials" className="text-sm text-muted-foreground hover:text-foreground transition-colors font-body">Results</a>
-          <Button variant="hero" size="sm">Start Free Trial</Button>
+          <Button variant="hero" size="sm" onClick={() => window.location.href = '/onboarding'}>Start Free Trial</Button>
         </div>
 
         <button
@@ -32,7 +32,7 @@ const Navbar = () => {
           <a href="#features" className="block text-sm text-muted-foreground hover:text-foreground font-body">Features</a>
           <a href="#pricing" className="block text-sm text-muted-foreground hover:text-foreground font-body">Pricing</a>
           <a href="#testimonials" className="block text-sm text-muted-foreground hover:text-foreground font-body">Results</a>
-          <Button variant="hero" size="default" className="w-full">Start Free Trial</Button>
+          <Button variant="hero" size="default" className="w-full" onClick={() => window.location.href = '/onboarding'}>Start Free Trial</Button>
         </div>
       )}
     </nav>
