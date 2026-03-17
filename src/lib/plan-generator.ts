@@ -1,5 +1,5 @@
 import { PlayerProfile, WeeklyPlan, DayPlan, DayOfWeek, DrillCategory, Drill } from '@/types/app';
-import { getFilteredDrills } from './drills';
+import { getFilteredDrills, getDrillById } from './drills';
 
 const ALL_DAYS: DayOfWeek[] = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
@@ -9,6 +9,15 @@ const GOAL_TO_CATEGORIES: Record<string, DrillCategory[]> = {
   speed_agility: ['agility', 'footwork'],
   conditioning: ['conditioning'],
   overall: ['shooting', 'dribbling', 'footwork', 'conditioning', 'agility'],
+};
+
+// Priority order for sorting drills within a day: shooting first, then footwork, dribbling, agility, conditioning
+const CATEGORY_PRIORITY: Record<DrillCategory, number> = {
+  shooting: 0,
+  footwork: 1,
+  dribbling: 2,
+  agility: 3,
+  conditioning: 4,
 };
 
 function shuffle<T>(arr: T[]): T[] {
@@ -36,11 +45,23 @@ function pickDrillsForDay(
       remainingTime -= drill.duration;
     }
   }
+
+  // Sort picked drills: shooting first (lowest difficulty first within shooting), then by category priority
+  picked.sort((a, b) => {
+    const drillA = getDrillById(a);
+    const drillB = getDrillById(b);
+    if (!drillA || !drillB) return 0;
+    const catPriorityA = CATEGORY_PRIORITY[drillA.category];
+    const catPriorityB = CATEGORY_PRIORITY[drillB.category];
+    if (catPriorityA !== catPriorityB) return catPriorityA - catPriorityB;
+    return drillA.difficulty - drillB.difficulty;
+  });
+
   return picked;
 }
 
 export function generateWeeklyPlan(profile: PlayerProfile): WeeklyPlan {
-  const { skillLevel, goals, equipment, daysPerWeek, sessionLength } = profile;
+  const { skillLevel, goals, equipment, sessionLength, trainingDays } = profile;
   const sessionSec = sessionLength * 60;
 
   // Get all categories the player cares about
@@ -50,11 +71,22 @@ export function generateWeeklyPlan(profile: PlayerProfile): WeeklyPlan {
   // Get available drills
   const available = getFilteredDrills(skillLevel, equipment);
 
-  // Spread training days evenly
-  const trainingDayIndices: number[] = [];
-  const gap = Math.floor(7 / daysPerWeek);
-  for (let i = 0; i < daysPerWeek; i++) {
-    trainingDayIndices.push(Math.min((i * gap) + (i > 0 ? 1 : 0), 6));
+  // Determine which days are training days
+  const trainingDaySet = new Set<DayOfWeek>(trainingDays || []);
+  const useCustomDays = trainingDays && trainingDays.length > 0;
+
+  // Fallback: auto-distribute if no custom days
+  let trainingDayIndices: number[] = [];
+  if (useCustomDays) {
+    trainingDayIndices = ALL_DAYS
+      .map((day, idx) => trainingDaySet.has(day) ? idx : -1)
+      .filter(i => i >= 0);
+  } else {
+    const daysPerWeek = profile.daysPerWeek || 4;
+    const gap = Math.floor(7 / daysPerWeek);
+    for (let i = 0; i < daysPerWeek; i++) {
+      trainingDayIndices.push(Math.min((i * gap) + (i > 0 ? 1 : 0), 6));
+    }
   }
 
   const days: DayPlan[] = ALL_DAYS.map((day, index) => {

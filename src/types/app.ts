@@ -23,6 +23,7 @@ export interface Drill {
   description: string;
   tip: string;
   skillLevel: SkillLevel[];
+  videoUrl?: string;
 }
 
 export interface PlayerProfile {
@@ -31,6 +32,7 @@ export interface PlayerProfile {
   goals: Goal[];
   equipment: Equipment[];
   daysPerWeek: number;
+  trainingDays?: DayOfWeek[];
   sessionLength: 30 | 45 | 60;
   createdAt: string;
 }
@@ -94,4 +96,17 @@ export interface Achievement {
   description: string;
   icon: string;
   unlockedAt?: string;
+}
+
+export interface AnalysisRecord {
+  id: string;
+  date: string;
+  analysisType: 'shooting' | 'dribbling' | 'footwork';
+  thumbnailDataUrl: string;
+  overallScore: number;
+  summary: string;
+  strengths: string[];
+  corrections: { area: string; issue: string; fix: string; priority: 'high' | 'medium' | 'low' }[];
+  drillRecommendations: string[];
+  detailedNotes: string;
 }

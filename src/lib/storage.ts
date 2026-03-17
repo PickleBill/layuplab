@@ -1,4 +1,4 @@
-import { PlayerProfile, PlayerStats, WeeklyPlan, WorkoutSession, DailyChallenge, DrillCategory, LevelTitle } from '@/types/app';
+import { PlayerProfile, PlayerStats, WeeklyPlan, WorkoutSession, DailyChallenge, DrillCategory, LevelTitle, AnalysisRecord } from '@/types/app';
 import { getLevelFromXp, getLevelTitle } from './xp';
 
 const KEYS = {
@@ -7,6 +7,7 @@ const KEYS = {
   plan: 'layuplab_plan',
   sessions: 'layuplab_sessions',
   challenges: 'layuplab_challenges',
+  analysisHistory: 'layuplab_analysis_history',
 } as const;
 
 function get<T>(key: string): T | null {
@@ -118,6 +119,19 @@ export function getChallenges(): DailyChallenge[] {
 
 export function saveChallenges(challenges: DailyChallenge[]): void {
   set(KEYS.challenges, challenges);
+}
+
+// Analysis History
+export function getAnalysisHistory(): AnalysisRecord[] {
+  return get<AnalysisRecord[]>(KEYS.analysisHistory) || [];
+}
+
+export function saveAnalysisRecord(record: AnalysisRecord): void {
+  const history = getAnalysisHistory();
+  history.unshift(record); // newest first
+  // Keep last 20 to avoid localStorage bloat (thumbnails are large)
+  if (history.length > 20) history.length = 20;
+  set(KEYS.analysisHistory, history);
 }
 
 export function hasCompletedOnboarding(): boolean {

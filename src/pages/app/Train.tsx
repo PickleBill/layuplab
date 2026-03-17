@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Play, Pause, SkipForward, Check, ChevronRight, Lightbulb, ArrowLeft } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Play, Pause, SkipForward, Check, ChevronRight, Lightbulb, ArrowLeft, Video } from "lucide-react";
 import { getPlan, getStats, saveStats, saveSession, updateStreak, addXp, updateSkillRating, addAchievement } from "@/lib/storage";
 import { getTodaysPlan } from "@/lib/plan-generator";
 import { getDrillById } from "@/lib/drills";
@@ -26,6 +27,7 @@ const Train = () => {
   const [isPaused, setIsPaused] = useState(false);
   const [completedDrills, setCompletedDrills] = useState<DrillSession[]>([]);
   const [showTip, setShowTip] = useState(false);
+  const [videoDrill, setVideoDrill] = useState<Drill | null>(null);
 
   const currentDrill = drills[currentDrillIndex];
   const drillProgress = currentDrill ? Math.min((elapsed / currentDrill.duration) * 100, 100) : 0;
@@ -128,6 +130,11 @@ const Train = () => {
 
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
 
+  const getYouTubeEmbedUrl = (url: string) => {
+    const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&]+)/);
+    return match ? `https://www.youtube.com/embed/${match[1]}` : null;
+  };
+
   if (todayPlan?.isRestDay) {
     return (
       <div className="p-6 max-w-2xl mx-auto text-center py-20">
@@ -150,6 +157,26 @@ const Train = () => {
 
   return (
     <div className="p-6 max-w-2xl mx-auto">
+      {/* Video Demo Dialog */}
+      <Dialog open={!!videoDrill} onOpenChange={() => setVideoDrill(null)}>
+        <DialogContent className="sm:max-w-lg p-0 overflow-hidden">
+          <DialogHeader className="p-4 pb-0">
+            <DialogTitle className="font-display font-bold">{videoDrill?.name} — Demo</DialogTitle>
+          </DialogHeader>
+          {videoDrill?.videoUrl && (
+            <div className="aspect-video w-full">
+              <iframe
+                src={getYouTubeEmbedUrl(videoDrill.videoUrl) || ''}
+                className="w-full h-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                title={`${videoDrill.name} demo video`}
+              />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       <AnimatePresence mode="wait">
         {/* OVERVIEW */}
         {state === 'overview' && (
@@ -166,7 +193,7 @@ const Train = () => {
                   <span className="w-8 h-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center font-display font-bold text-sm text-primary">
                     {i + 1}
                   </span>
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <p className="font-body font-medium text-foreground">{drill.name}</p>
                     <div className="flex items-center gap-2 mt-0.5">
                       <Badge variant="secondary" className="text-[10px] uppercase font-display">{drill.category}</Badge>
@@ -174,6 +201,16 @@ const Train = () => {
                       <span className="text-xs text-muted-foreground">{'●'.repeat(drill.difficulty)}{'○'.repeat(3 - drill.difficulty)}</span>
                     </div>
                   </div>
+                  {drill.videoUrl && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="shrink-0 gap-1 text-xs text-primary hover:text-primary"
+                      onClick={() => setVideoDrill(drill)}
+                    >
+                      <Video size={14} /> Demo
+                    </Button>
+                  )}
                 </div>
               ))}
             </div>
@@ -244,6 +281,11 @@ const Train = () => {
 
             {/* Controls */}
             <div className="flex justify-center gap-4">
+              {currentDrill.videoUrl && (
+                <Button variant="outline" size="icon" onClick={() => { setIsPaused(true); setVideoDrill(currentDrill); }}>
+                  <Video size={18} />
+                </Button>
+              )}
               <Button variant="outline" size="icon" onClick={() => setShowTip(t => !t)}>
                 <Lightbulb size={18} />
               </Button>
