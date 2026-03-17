@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ChevronRight, ChevronLeft, Target, Dumbbell, Zap, Heart, Star } from "lucide-react";
-import { PlayerProfile, SkillLevel, Goal, Equipment } from "@/types/app";
+import { PlayerProfile, SkillLevel, Goal, Equipment, DayOfWeek } from "@/types/app";
 import { saveProfile, saveStats, getDefaultStats, savePlan } from "@/lib/storage";
 import { generateWeeklyPlan } from "@/lib/plan-generator";
 
@@ -30,6 +30,16 @@ const EQUIPMENT: { value: Equipment; label: string }[] = [
   { value: 'none', label: '✋ Nothing (bodyweight only)' },
 ];
 
+const ALL_DAYS: { value: DayOfWeek; label: string; short: string }[] = [
+  { value: 'monday', label: 'Monday', short: 'Mon' },
+  { value: 'tuesday', label: 'Tuesday', short: 'Tue' },
+  { value: 'wednesday', label: 'Wednesday', short: 'Wed' },
+  { value: 'thursday', label: 'Thursday', short: 'Thu' },
+  { value: 'friday', label: 'Friday', short: 'Fri' },
+  { value: 'saturday', label: 'Saturday', short: 'Sat' },
+  { value: 'sunday', label: 'Sunday', short: 'Sun' },
+];
+
 const Onboarding = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
@@ -37,18 +47,19 @@ const Onboarding = () => {
   const [skillLevel, setSkillLevel] = useState<SkillLevel | null>(null);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [equipment, setEquipment] = useState<Equipment[]>([]);
-  const [daysPerWeek, setDaysPerWeek] = useState(4);
+  const [trainingDays, setTrainingDays] = useState<DayOfWeek[]>([]);
   const [sessionLength, setSessionLength] = useState<30 | 45 | 60>(45);
 
   const toggleGoal = (g: Goal) => setGoals(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g]);
   const toggleEquip = (e: Equipment) => setEquipment(prev => prev.includes(e) ? prev.filter(x => x !== e) : [...prev, e]);
+  const toggleDay = (d: DayOfWeek) => setTrainingDays(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d]);
 
   const canProceed = () => {
     switch (step) {
       case 0: return username.trim().length >= 2 && skillLevel !== null;
       case 1: return goals.length > 0;
       case 2: return equipment.length > 0;
-      case 3: return true;
+      case 3: return trainingDays.length > 0;
       default: return false;
     }
   };
@@ -60,7 +71,8 @@ const Onboarding = () => {
       skillLevel,
       goals,
       equipment,
-      daysPerWeek,
+      daysPerWeek: trainingDays.length,
+      trainingDays,
       sessionLength,
       createdAt: new Date().toISOString(),
     };
@@ -179,27 +191,30 @@ const Onboarding = () => {
             {step === 3 && (
               <div className="space-y-8">
                 <div>
-                  <h1 className="font-display font-extrabold text-3xl text-foreground mb-2">Set your schedule</h1>
-                  <p className="text-muted-foreground font-body">How often and how long can you train?</p>
+                  <h1 className="font-display font-extrabold text-3xl text-foreground mb-2">Pick your training days</h1>
+                  <p className="text-muted-foreground font-body">Choose which days you want to train. We'll build your plan around your schedule.</p>
                 </div>
                 <div className="space-y-6">
                   <div className="space-y-3">
-                    <label className="text-sm font-body text-muted-foreground">Days per week</label>
-                    <div className="flex gap-2">
-                      {[2, 3, 4, 5, 6].map(d => (
+                    <label className="text-sm font-body text-muted-foreground">Training days</label>
+                    <div className="grid grid-cols-4 gap-2">
+                      {ALL_DAYS.map(d => (
                         <button
-                          key={d}
-                          onClick={() => setDaysPerWeek(d)}
-                          className={`flex-1 h-12 rounded-md border font-display font-bold transition-all ${
-                            daysPerWeek === d
+                          key={d.value}
+                          onClick={() => toggleDay(d.value)}
+                          className={`h-14 rounded-md border font-display font-bold text-sm transition-all ${
+                            trainingDays.includes(d.value)
                               ? 'border-primary bg-primary text-primary-foreground'
                               : 'border-border bg-card text-foreground hover:border-muted-foreground/30'
                           }`}
                         >
-                          {d}
+                          {d.short}
                         </button>
                       ))}
                     </div>
+                    <p className="text-xs text-muted-foreground font-body">
+                      {trainingDays.length} day{trainingDays.length !== 1 ? 's' : ''} selected
+                    </p>
                   </div>
                   <div className="space-y-3">
                     <label className="text-sm font-body text-muted-foreground">Session length</label>
