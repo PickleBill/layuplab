@@ -59,7 +59,11 @@ const HeroSection = () => {
             <Button variant="hero" size="xl">
               Start Your 7-Day Free Trial
             </Button>
-            <Button variant="heroOutline" size="xl">
+            <Button
+              variant="heroOutline"
+              size="xl"
+              onClick={() => document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" })}
+            >
               <Play size={18} />
               Watch How the AI Works
             </Button>
