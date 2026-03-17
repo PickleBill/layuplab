@@ -1,6 +1,6 @@
 import { Outlet, useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { LayoutDashboard, Dumbbell, Calendar, BarChart3, Video, Trophy } from "lucide-react";
+import { LayoutDashboard, Dumbbell, Calendar, BarChart3, Video, Trophy, Users } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 
 const navItems = [
@@ -10,6 +10,7 @@ const navItems = [
   { to: "/app/progress", icon: BarChart3, label: "Progress" },
   { to: "/app/analyze", icon: Video, label: "Analyze" },
   { to: "/app/challenges", icon: Trophy, label: "Challenges" },
+  { to: "/app/leaderboard", icon: Users, label: "Ranks" },
 ];
 
 const AppLayout = () => {
