@@ -6,7 +6,6 @@ import heroBg from "@/assets/hero-court.jpg";
 const HeroSection = () => {
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden scanline-overlay grain-overlay">
-      {/* Background image */}
       <div className="absolute inset-0">
         <img
           src={heroBg}
@@ -17,7 +16,6 @@ const HeroSection = () => {
         <div className="absolute inset-0 bg-gradient-to-r from-background/60 to-transparent" />
       </div>
 
-      {/* Content */}
       <div className="relative z-10 container pt-24 pb-20">
         <div className="max-w-2xl">
           <motion.div
@@ -47,7 +45,7 @@ const HeroSection = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.2, delay: 0.1 }}
           >
-            Stop practicing hard and start training smart. Layup Lab uses AI to analyze your shooting form, track your dribbling speed, and build personalized daily workouts that evolve with your skill level.
+            Most hoopers can't afford a private coach. Layup Lab puts one in your pocket — AI that watches your form, builds your plan, and pushes you to prove yourself. No gym membership required. Just your phone and a court.
           </motion.p>
 
           <motion.div
@@ -57,7 +55,7 @@ const HeroSection = () => {
             transition={{ duration: 0.2, delay: 0.15 }}
           >
             <Button variant="hero" size="xl" onClick={() => window.location.href = '/onboarding'}>
-              Start Your 7-Day Free Trial
+              Get Started
             </Button>
             <Button
               variant="heroOutline"

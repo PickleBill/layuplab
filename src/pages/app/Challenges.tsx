@@ -3,6 +3,16 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Trophy, Flame, Check } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { getChallenges, saveChallenges, getStats, addXp } from "@/lib/storage";
 import { DailyChallenge, DrillCategory } from "@/types/app";
 import { XP_PER_CHALLENGE } from "@/lib/xp";
@@ -37,6 +47,7 @@ function generateDailyChallenges(): DailyChallenge[] {
 
 const Challenges = () => {
   const [challenges, setChallenges] = useState<DailyChallenge[]>([]);
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const stats = getStats();
 
   useEffect(() => {
@@ -49,6 +60,8 @@ const Challenges = () => {
     setChallenges(saved);
   }, []);
 
+  const confirmingChallenge = challenges.find(c => c.id === confirmingId);
+
   const completeChallenge = (id: string) => {
     const updated = challenges.map(c =>
       c.id === id ? { ...c, completed: true } : c
@@ -56,6 +69,7 @@ const Challenges = () => {
     setChallenges(updated);
     saveChallenges(updated);
     addXp(XP_PER_CHALLENGE);
+    setConfirmingId(null);
   };
 
   const completedCount = challenges.filter(c => c.completed).length;
@@ -69,7 +83,6 @@ const Challenges = () => {
         </p>
       </div>
 
-      {/* Streak Banner */}
       {stats.currentStreak > 0 && (
         <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 flex items-center gap-3">
           <Flame className="text-primary" size={24} />
@@ -80,13 +93,11 @@ const Challenges = () => {
         </div>
       )}
 
-      {/* Progress */}
       <div className="flex items-center gap-2">
         <Trophy size={16} className="text-primary" />
         <span className="text-sm font-body text-muted-foreground">{completedCount}/{challenges.length} completed today</span>
       </div>
 
-      {/* Challenge Cards */}
       <div className="space-y-3">
         {challenges.map((challenge, i) => (
           <motion.div
@@ -116,7 +127,7 @@ const Challenges = () => {
                   <Check size={18} className="text-accent" />
                 </div>
               ) : (
-                <Button variant="outline" size="sm" onClick={() => completeChallenge(challenge.id)}>
+                <Button variant="outline" size="sm" onClick={() => setConfirmingId(challenge.id)}>
                   Done
                 </Button>
               )}
@@ -124,6 +135,31 @@ const Challenges = () => {
           </motion.div>
         ))}
       </div>
+
+      <p className="text-xs text-muted-foreground font-body text-center italic">
+        Be honest — your progress depends on it. Real verification coming soon.
+      </p>
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={!!confirmingId} onOpenChange={(open) => !open && setConfirmingId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-display">Did you actually complete it?</AlertDialogTitle>
+            <AlertDialogDescription className="font-body">
+              {confirmingChallenge ? `"${confirmingChallenge.title}" — ${confirmingChallenge.description}` : ''}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="font-body">Not yet</AlertDialogCancel>
+            <AlertDialogAction
+              className="font-display"
+              onClick={() => confirmingId && completeChallenge(confirmingId)}
+            >
+              Yes, I did it 💪
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

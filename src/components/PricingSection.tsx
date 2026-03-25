@@ -4,43 +4,44 @@ import { Check } from "lucide-react";
 
 const tiers = [
   {
-    name: "The Rookie",
-    price: "Free",
-    period: "",
-    description: "Start building your foundation",
+    name: "Prove It",
+    price: "$25",
+    period: "/mo",
+    description: "You're here to get better. Start with the fundamentals.",
     features: [
-      "Daily skill library access",
-      "Basic progress tracking",
+      "Daily form shooting drills (always first)",
+      "Progress tracking & streaks",
       "Community challenges",
+      "Coach personality selection",
     ],
-    cta: "Get Started",
+    cta: "I'm Ready",
     highlighted: false,
   },
   {
-    name: "The Pro",
-    price: "$19.99",
+    name: "Lock In",
+    price: "$50",
     period: "/mo",
-    description: "Unlock your full potential",
+    description: "You're serious. Get AI in your corner.",
     features: [
+      "Everything in Prove It",
       "Full AI VisionForm analysis",
       "Personalized adaptive workouts",
-      "Advanced footwork metrics",
+      "Advanced footwork & handle metrics",
       "Microlab technique modules",
-      "Detailed performance analytics",
     ],
-    cta: "Start Free Trial",
+    cta: "Level Up",
     highlighted: true,
   },
   {
-    name: "The Elite",
-    price: "$179",
-    period: "/yr",
-    description: "The complete training ecosystem",
+    name: "No Limits",
+    price: "$100",
+    period: "/mo",
+    description: "The complete training ecosystem. Earn your way here.",
     features: [
-      "Everything in Pro",
-      "Nutrition integration",
-      "Whoop / Apple Watch syncing",
+      "Everything in Lock In",
+      "Wearable syncing (Whoop / Apple Watch)",
       "Coach's Corner progress reports",
+      "Scouting profile visibility",
       "Priority feature access",
     ],
     cta: "Go Elite",
@@ -65,6 +66,9 @@ const PricingSection = () => {
           <h2 className="font-display font-extrabold text-3xl sm:text-4xl lg:text-5xl text-foreground">
             Choose Your Level
           </h2>
+          <p className="font-body text-muted-foreground mt-4 max-w-md mx-auto">
+            Not about skill. It's about how serious you are.
+          </p>
         </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto items-stretch">
@@ -120,6 +124,7 @@ const PricingSection = () => {
                 variant={tier.highlighted ? "hero" : "outline"}
                 size="lg"
                 className="w-full"
+                onClick={() => window.location.href = '/onboarding'}
               >
                 {tier.cta}
               </Button>
