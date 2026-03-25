@@ -1,4 +1,4 @@
-import { PlayerProfile, PlayerStats, WeeklyPlan, WorkoutSession, DailyChallenge, DrillCategory, LevelTitle, AnalysisRecord } from '@/types/app';
+import { PlayerProfile, PlayerStats, WeeklyPlan, WorkoutSession, DailyChallenge, DrillCategory, LevelTitle, AnalysisRecord, CoachStyle } from '@/types/app';
 import { getLevelFromXp, getLevelTitle } from './xp';
 
 const KEYS = {
@@ -28,6 +28,10 @@ export function getProfile(): PlayerProfile | null {
 
 export function saveProfile(profile: PlayerProfile): void {
   set(KEYS.profile, profile);
+}
+
+export function getCoachStyle(): CoachStyle {
+  return getProfile()?.coachStyle || 'motivator';
 }
 
 // Stats
@@ -128,8 +132,7 @@ export function getAnalysisHistory(): AnalysisRecord[] {
 
 export function saveAnalysisRecord(record: AnalysisRecord): void {
   const history = getAnalysisHistory();
-  history.unshift(record); // newest first
-  // Keep last 20 to avoid localStorage bloat (thumbnails are large)
+  history.unshift(record);
   if (history.length > 20) history.length = 20;
   set(KEYS.analysisHistory, history);
 }

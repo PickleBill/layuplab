@@ -1,19 +1,41 @@
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Flame, Dumbbell, Clock, Trophy, ChevronRight } from "lucide-react";
+import { Flame, Dumbbell, Clock, Trophy, ChevronRight, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { getProfile, getStats, getPlan } from "@/lib/storage";
+import { getProfile, getStats, getPlan, getSessions, getCoachStyle } from "@/lib/storage";
 import { getXpProgress, getXpForCurrentLevel, XP_PER_LEVEL } from "@/lib/xp";
 import { getTodaysPlan } from "@/lib/plan-generator";
 import { getDrillById } from "@/lib/drills";
+import { CoachStyle } from "@/types/app";
 
 const ACHIEVEMENTS_MAP: Record<string, { title: string; icon: string }> = {
   first_workout: { title: 'First Workout', icon: '🏀' },
   streak_7: { title: '7-Day Streak', icon: '🔥' },
   drills_100: { title: '100 Drills', icon: '💯' },
   level_5: { title: 'Level 5', icon: '⭐' },
+};
+
+const COACH_TIPS: Record<CoachStyle, string[]> = {
+  motivator: [
+    "Every rep counts! Even 10 minutes of form shooting today puts you ahead of yesterday. 🏀",
+    "You showed up — that's already more than most. Let's make it count! 💪",
+    "Small wins stack up. Trust the process and watch yourself level up.",
+    "Remember: Steph Curry started with form shots too. Keep going!",
+  ],
+  drill_sergeant: [
+    "No excuses today. Get to the court and put in the work. Form shooting first — always.",
+    "You think you're tired? Your competition isn't resting. Get after it.",
+    "Stop scrolling and start shooting. The court is waiting.",
+    "Discipline beats motivation every single day. Show up.",
+  ],
+  technician: [
+    "Focus on your guide hand today — it should come off the ball at release, not push sideways.",
+    "Track your shooting arc. Optimal release angle is 45-52°. Film yourself and check.",
+    "Footwork tip: Your pivot foot placement determines your entire shot mechanics. Start there.",
+    "Analyze your follow-through. Hold it until the ball reaches the rim. Consistency is data.",
+  ],
 };
 
 const Dashboard = () => {
@@ -33,11 +55,18 @@ const Dashboard = () => {
   const todayDrills = todayPlan?.drills.map(id => getDrillById(id)).filter(Boolean) || [];
   const totalTodayMin = Math.round(todayDrills.reduce((sum, d) => sum + (d?.duration || 0), 0) / 60);
 
-  // Weekly progress
+  // Weekly progress — real calculation
   const trainingDays = plan?.days.filter(d => !d.isRestDay).length || 0;
-  const today = new Date();
-  const dayIndex = (today.getDay() + 6) % 7;
-  const completedDays = 0; // Simplified - would track from sessions
+  const sessions = getSessions();
+  const weekStart = new Date();
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+  weekStart.setHours(0, 0, 0, 0);
+  const completedDays = sessions.filter(s => new Date(s.date) >= weekStart).length;
+
+  // Coach tip
+  const coachStyle = getCoachStyle();
+  const tips = COACH_TIPS[coachStyle];
+  const tipIndex = Math.floor(Date.now() / 86400000) % tips.length; // rotates daily
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
@@ -77,6 +106,25 @@ const Dashboard = () => {
         </div>
       </motion.div>
 
+      {/* Coach's Tip */}
+      <motion.div
+        className="rounded-lg border border-primary/20 bg-primary/5 p-4 flex items-start gap-3"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.05 }}
+      >
+        <MessageSquare size={20} className="text-primary mt-0.5 shrink-0" />
+        <div>
+          <p className="font-display font-bold text-sm text-foreground mb-1">
+            Coach's Tip
+            <span className="text-xs text-muted-foreground font-body ml-2">
+              ({coachStyle === 'motivator' ? 'The Motivator' : coachStyle === 'drill_sergeant' ? 'The Drill Sergeant' : 'The Technician'})
+            </span>
+          </p>
+          <p className="text-sm text-muted-foreground font-body">{tips[tipIndex]}</p>
+        </div>
+      </motion.div>
+
       {/* Stats Row */}
       <motion.div
         className="grid grid-cols-2 sm:grid-cols-4 gap-3"
@@ -96,6 +144,22 @@ const Dashboard = () => {
             <p className="text-xs text-muted-foreground font-body">{stat.label}</p>
           </div>
         ))}
+      </motion.div>
+
+      {/* Weekly Progress */}
+      <motion.div
+        className="rounded-lg border border-border bg-card p-4"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.15 }}
+      >
+        <div className="flex items-center justify-between">
+          <p className="font-display font-bold text-sm text-foreground">This Week</p>
+          <Badge variant="outline" className="text-xs font-body">
+            {completedDays}/{trainingDays} days
+          </Badge>
+        </div>
+        <Progress value={trainingDays > 0 ? (completedDays / trainingDays) * 100 : 0} className="h-2 mt-2" />
       </motion.div>
 
       {/* Today's Workout */}
