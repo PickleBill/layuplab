@@ -1,117 +1,79 @@
+## Plan: Drill Library, Streamlined Onboarding, and Celebrity AI Coach Onboarding
 
-
-## Plan: Layup Lab V2 — Full Enhancement Pass
-
-This is a large but well-scoped update across 9 areas. All changes modify existing files — no new pages needed except one new edge function for the AI chatbot coach.
+Three interconnected changes: a new Drill Library page, a drastically simplified onboarding (1-2 questions), and an AI coach chatbot that handles the detailed onboarding conversationally using celebrity basketball player personas.
 
 ---
 
-### 1. Pricing Overhaul (`src/components/PricingSection.tsx`)
+### 1. Drill Library Page
 
-Replace the `tiers` array with Ava's exact model:
-- **Prove It** — $25/mo, commitment-focused copy, CTA "I'm Ready"
-- **Lock In** — $50/mo, highlighted, CTA "Level Up"  
-- **No Limits** — $100/mo, CTA "Go Elite"
+**New file: `src/pages/app/DrillLibrary.tsx**`
 
-Tone: aspirational/exclusive ("Are you that type of person?"), NOT skill-based. Keep existing card layout, animations, glow border.
+A browsable grid of all 50+ drills from `drills.ts` with:
 
-### 2. Form Shooting Always First (`src/lib/plan-generator.ts`)
+- **Filter bar** at top: Category chips (Shooting, Dribbling, Footwork, Conditioning, Agility), Difficulty selector (1/2/3 stars), Equipment multi-select
+- **Drill cards** in a responsive grid showing: name, category badge, difficulty dots, duration, equipment tags, and a "Watch Demo" button that opens the YouTube video in a dialog
+- **Expandable detail** on click: full description, technique tip, skill levels
+- Search input for quick filtering by name
 
-After `pickDrillsForDay` builds the drill list, force `shooting-1` (or `shooting-2` fallback) to index 0 of every training day. If it's already present, move it; if not, insert it and drop the last drill if needed to stay within the time budget. This goes in the day-building loop inside `generateWeeklyPlan`.
+**Routing:** Add `/app/drills` route in `App.tsx`. Add a "Drills" nav item (BookOpen icon) to `AppLayout.tsx` nav between Train and Plan.
 
-### 3. Onboarding Overhaul (`src/pages/Onboarding.tsx`, `src/types/app.ts`)
+### 2. Streamlined Onboarding (1 panel, 2 questions)
 
-**Types changes:**
-- Add `CommitmentLevel = 'starting' | 'working' | 'competing'`
-- Add `CoachStyle = 'motivator' | 'drill_sergeant' | 'technician'`
-- Add `Tier = 'prove_it' | 'lock_in' | 'no_limits'`
-- Add these fields to `PlayerProfile`, keep `skillLevel` for internal drill filtering (map commitment → skillLevel internally)
+**Rewrite `src/pages/Onboarding.tsx**` — collapse the current 6-step flow into a single screen:
 
-**6-step onboarding flow:**
-1. Profile + Commitment ("How serious are you?" with 3 cards replacing skill level)
-2. Goals (unchanged)
-3. Coach Style (NEW — 3 personality cards: Motivator, Drill Sergeant, Technician)
-4. Equipment (unchanged)
-5. Training Schedule (unchanged day picker + session length)
-6. Tier Selection (show 3 pricing cards matching PricingSection design, stored as `tier`)
+- **Name input** — "What should we call you?"
+- **Commitment level** — 3 cards: "Just getting started" / "I'm putting in work" / "This is my life"
+- **"Let's Go" button** — saves a minimal profile with sensible defaults:
+  - `goals: ['overall']`
+  - `coachStyle: 'motivator'` (default, will be set by AI coach)
+  - `equipment: ['none']`
+  - `trainingDays`: all 7 days (coach will refine)
+  - `sessionLength: 45`
+  - `tier: 'prove_it'`
+- Generates a default plan and navigates to `/app/dashboard`
 
-Update progress bar from 4 to 6 segments. Map commitment internally: starting→beginner, working→intermediate, competing→advanced.
+This gets users into the app in under 15 seconds.
 
-### 4. Daily Challenges Confirmation (`src/pages/app/Challenges.tsx`)
+### 3. Celebrity AI Coach Onboarding Chatbot
 
-Replace the instant `completeChallenge` call with an `AlertDialog`:
-- "Did you actually complete [Challenge Name]?"
-- "Yes, I did it" (awards XP) / "Not yet" (dismisses)
-- Add note below cards: "Be honest — your progress depends on it. Real verification coming soon."
+**Update edge function `supabase/functions/coach-chat/index.ts`:**
 
-### 5. Landing Page Tone (`src/components/HeroSection.tsx`, `src/components/ProblemSection.tsx`)
+Replace the generic coach personas with 3 celebrity basketball player personas:
 
-**Hero body copy:** "Most hoopers can't afford a private coach. Layup Lab puts one in your pocket — AI that watches your form, builds your plan, and pushes you to prove yourself. No gym membership required. Just your phone and a court."
+- **Kobe Bryant** — Mamba Mentality. Intense, detail-oriented, demands perfection. "You think one workout is enough? Do it again."
+- **LeBron James** — Strategic, team-minded, analytical. "Let's build your game systematically. What's your weakest link?"
+- **Steph Curry** — Fun, creative, encouraging. "Shooting is an art — let's find your rhythm."
+- add a coach perspective - a famous one
+- and also a funny character ffrom  basketball lore or some other comedic type of personality 
 
-**Problem body copy:** "You're putting in the hours, but nobody's watching. No coach. No feedback. No structure. Just you and a hoop — grinding without knowing if you're getting better or just getting tired. Layup Lab changes that."
+The system prompt instructs the coach to proactively ask the new user about their goals, equipment, training schedule, and preferred session length during conversation — effectively doing the detailed onboarding through natural dialogue. When the coach has enough info, it tells the user "I've updated your plan" and returns a structured JSON block (via a `[PROFILE_UPDATE]` tag in the response) that the frontend parses to update the profile and regenerate the plan.
 
-Update the `$100/hour` callout text.
+**Update `AppLayout.tsx` coach chat:**
 
-### 6. Leaderboard → Strava-Style Feed (`src/pages/app/Leaderboard.tsx`)
+- Change `COACH_NAMES` to the 3 celebrity names
+- When the user first enters the app (no detailed profile yet), auto-open the chat with a welcome message from the default coach: "Hey [name]! I'm [Coach]. Let me ask you a few things so I can build your perfect training plan..."
+- Parse `[PROFILE_UPDATE]{...}` JSON from coach responses to update profile/plan automatically
+- Add a coach selector in the chat header (3 avatar buttons) so users can switch celebrities anytime — this updates `coachStyle` in storage and resets the chat
 
-Replace current content with:
-- "Your Training Feed" header
-- 3-4 mock Strava-style activity cards (e.g., "completed a 45-min shooting session")
-- "Training feed launching soon" note about public-by-default accountability
-- Email signup input with toast confirmation
-- Keep user's own stats card at top
+**Update `src/types/app.ts`:**
 
-### 7. Branding Cleanup (`index.html`)
+- Update `CoachStyle` type to `'kobe' | 'lebron' | 'curry'`
 
-- `twitter:site` → `@LayupLab`
-- Remove both `og:image` and `twitter:image` meta tags (expired CDN URLs)
+**Update `src/lib/storage.ts`:**
 
-### 8. Dashboard Weekly Progress Fix (`src/pages/app/Dashboard.tsx`)
-
-Replace `const completedDays = 0;` with real calculation using `getSessions()` — count sessions whose date falls within the current week. Display as "X/Y days this week".
-
-### 9. Navbar Updates (`src/components/Navbar.tsx`)
-
-- Add "How It Works" link between Features and Pricing (anchors to `#how-it-works`)
-- Change "Start Free Trial" to "Get Started" linking to `/onboarding`
-- On the landing page CTA buttons, also update copy from "Start Your 7-Day Free Trial" to "Get Started" in `HeroSection.tsx`
-
-### 10. AI Coach Chatbot (NEW edge function + app integration)
-
-Create `supabase/functions/coach-chat/index.ts` — a conversational AI coach that:
-- Uses the player's `coachStyle` to set personality in the system prompt
-- Accepts text messages and returns coaching responses
-- Uses Gemini 2.5 Flash via Lovable AI gateway
-
-Add a floating "Ask Coach" button in `AppLayout.tsx` that opens a chat drawer/dialog. The coach can:
-- Answer technique questions ("How do I improve my crossover?")
-- Give motivational nudges based on stats
-- Suggest drills and tips contextually
-
-The coach personality adjusts based on the selected style (Motivator = encouraging, Drill Sergeant = direct/pushing, Technician = analytical).
-
-### 11. Contextual Tips in Dashboard
-
-Add a "Coach's Tip" card on the Dashboard that uses the coach style to display a rotating tip. Pull from a static array of tips categorized by drill type, with tone matching the selected coach personality.
+- Add `hasDetailedProfile(): boolean` — checks if profile has been enriched beyond defaults (e.g., goals !== ['overall'] or equipment !== ['none'])
 
 ---
 
-### Files Modified
+### Files Summary
 
-| File | Changes |
-|------|---------|
-| `src/types/app.ts` | Add CommitmentLevel, CoachStyle, Tier types; update PlayerProfile |
-| `src/components/PricingSection.tsx` | New tier data |
-| `src/lib/plan-generator.ts` | Force shooting-1 first |
-| `src/pages/Onboarding.tsx` | 6-step flow with commitment + coach style + tier |
-| `src/pages/app/Challenges.tsx` | Confirmation dialog |
-| `src/components/HeroSection.tsx` | New copy + "Get Started" CTA |
-| `src/components/ProblemSection.tsx` | New copy |
-| `src/pages/app/Leaderboard.tsx` | Strava-style feed |
-| `index.html` | Fix meta tags |
-| `src/pages/app/Dashboard.tsx` | Real weekly progress + Coach's Tip card |
-| `src/components/Navbar.tsx` | Add "How It Works" link, "Get Started" CTA |
-| `src/components/app/AppLayout.tsx` | Floating "Ask Coach" button + chat drawer |
-| `src/lib/storage.ts` | Add coach style getter helper |
-| `supabase/functions/coach-chat/index.ts` | NEW — AI chatbot edge function |
 
+| File                                     | Change                                                                                                     |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `src/pages/app/DrillLibrary.tsx`         | NEW — filterable drill grid with video modals                                                              |
+| `src/pages/Onboarding.tsx`               | Rewrite to single-panel 2-question flow                                                                    |
+| `src/App.tsx`                            | Add `/app/drills` route                                                                                    |
+| `src/components/app/AppLayout.tsx`       | Add Drills nav item, celebrity coach selector, auto-open chat for new users, parse profile updates from AI |
+| `supabase/functions/coach-chat/index.ts` | Celebrity personas (Kobe/LeBron/Curry), onboarding-aware system prompt                                     |
+| `src/types/app.ts`                       | Update CoachStyle to `'kobe'                                                                               |
+| `src/lib/storage.ts`                     | Add `hasDetailedProfile()` helper                                                                          |
