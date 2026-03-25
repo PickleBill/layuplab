@@ -15,6 +15,7 @@ import Progress from "./pages/app/Progress.tsx";
 import Analyze from "./pages/app/Analyze.tsx";
 import Challenges from "./pages/app/Challenges.tsx";
 import Leaderboard from "./pages/app/Leaderboard.tsx";
+import DrillLibrary from "./pages/app/DrillLibrary.tsx";
 
 const queryClient = new QueryClient();
 
