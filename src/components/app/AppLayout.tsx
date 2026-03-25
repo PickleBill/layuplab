@@ -1,15 +1,18 @@
 import { Outlet, useNavigate } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { LayoutDashboard, Dumbbell, Calendar, BarChart3, Video, Trophy, Users, MessageCircle, X, Send } from "lucide-react";
+import { LayoutDashboard, Dumbbell, BookOpen, Calendar, BarChart3, Video, Trophy, Users, MessageCircle, X, Send } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Button } from "@/components/ui/button";
-import { getCoachStyle } from "@/lib/storage";
+import { getCoachStyle, getProfile, hasDetailedProfile, saveProfile, savePlan } from "@/lib/storage";
+import { generateWeeklyPlan } from "@/lib/plan-generator";
 import { useToast } from "@/hooks/use-toast";
+import { CoachStyle, Goal, Equipment, DayOfWeek } from "@/types/app";
 
 const navItems = [
   { to: "/app/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { to: "/app/train", icon: Dumbbell, label: "Train" },
+  { to: "/app/drills", icon: BookOpen, label: "Drills" },
   { to: "/app/plan", icon: Calendar, label: "Plan" },
   { to: "/app/progress", icon: BarChart3, label: "Progress" },
   { to: "/app/analyze", icon: Video, label: "Analyze" },
@@ -21,11 +24,13 @@ type Msg = { role: "user" | "assistant"; content: string };
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/coach-chat`;
 
-const COACH_NAMES = {
-  motivator: "Coach Hype",
-  drill_sergeant: "Coach Steel",
-  technician: "Coach Precision",
-} as const;
+const COACHES: { id: CoachStyle; name: string; emoji: string }[] = [
+  { id: 'kobe', name: 'Kobe', emoji: '🐍' },
+  { id: 'lebron', name: 'LeBron', emoji: '👑' },
+  { id: 'curry', name: 'Steph', emoji: '🍳' },
+  { id: 'sir_charles', name: 'Barkley', emoji: '🎙️' },
+  { id: 'phil', name: 'Phil', emoji: '🧘' },
+];
 
 const AppLayout = () => {
   const isMobile = useIsMobile();
@@ -34,8 +39,10 @@ const AppLayout = () => {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [activeCoach, setActiveCoach] = useState<CoachStyle>(getCoachStyle());
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const hasAutoOpened = useRef(false);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -43,18 +50,56 @@ const AppLayout = () => {
     }
   }, [messages, chatOpen]);
 
-  const sendMessage = async () => {
-    const text = input.trim();
-    if (!text || isLoading) return;
+  // Auto-open chat for new users who haven't been profiled
+  useEffect(() => {
+    if (!hasAutoOpened.current && !hasDetailedProfile()) {
+      hasAutoOpened.current = true;
+      const profile = getProfile();
+      if (profile) {
+        setChatOpen(true);
+        // Send initial greeting trigger
+        const greeting: Msg = { role: "user", content: "Hey coach, I just joined Layup Lab!" };
+        setMessages([greeting]);
+        setIsLoading(true);
+        streamCoachResponse([greeting], true, profile.username);
+      }
+    }
+  }, []);
 
-    const userMsg: Msg = { role: "user", content: text };
-    setInput("");
-    setMessages(prev => [...prev, userMsg]);
-    setIsLoading(true);
+  const parseProfileUpdate = (text: string) => {
+    const match = text.match(/\[PROFILE_UPDATE\]([\s\S]*?)\[\/PROFILE_UPDATE\]/);
+    if (!match) return null;
+    try {
+      return JSON.parse(match[1]);
+    } catch { return null; }
+  };
 
+  const applyProfileUpdate = (update: any) => {
+    const profile = getProfile();
+    if (!profile) return;
+
+    const validGoals: Goal[] = ['shooting', 'ball_handling', 'speed_agility', 'conditioning', 'overall'];
+    const validEquipment: Equipment[] = ['hoop', 'cones', 'resistance_band', 'jump_rope', 'none'];
+    const validDays: DayOfWeek[] = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+
+    if (update.goals) profile.goals = update.goals.filter((g: string) => validGoals.includes(g as Goal));
+    if (update.equipment) profile.equipment = update.equipment.filter((e: string) => validEquipment.includes(e as Equipment));
+    if (update.trainingDays) {
+      profile.trainingDays = update.trainingDays.filter((d: string) => validDays.includes(d as DayOfWeek));
+      profile.daysPerWeek = profile.trainingDays!.length;
+    }
+    if (update.sessionLength && [30, 45, 60].includes(update.sessionLength)) {
+      profile.sessionLength = update.sessionLength;
+    }
+
+    saveProfile(profile);
+    const plan = generateWeeklyPlan(profile);
+    savePlan(plan);
+    toast({ title: "Plan updated! 🏀", description: "Your coach customized your training plan." });
+  };
+
+  const streamCoachResponse = async (allMessages: Msg[], isNewUser = false, playerName = '') => {
     let assistantSoFar = "";
-    const allMessages = [...messages, userMsg];
-
     try {
       const resp = await fetch(CHAT_URL, {
         method: "POST",
@@ -62,7 +107,12 @@ const AppLayout = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ messages: allMessages, coachStyle: getCoachStyle() }),
+        body: JSON.stringify({
+          messages: allMessages,
+          coachStyle: activeCoach,
+          isNewUser,
+          playerName,
+        }),
       });
 
       if (!resp.ok) {
@@ -111,6 +161,15 @@ const AppLayout = () => {
           }
         }
       }
+
+      // Check for profile update in the full response
+      const profileUpdate = parseProfileUpdate(assistantSoFar);
+      if (profileUpdate) {
+        applyProfileUpdate(profileUpdate);
+        // Clean the display text
+        const cleanText = assistantSoFar.replace(/\[PROFILE_UPDATE\][\s\S]*?\[\/PROFILE_UPDATE\]/, '').trim();
+        setMessages(prev => prev.map((m, i) => i === prev.length - 1 && m.role === 'assistant' ? { ...m, content: cleanText } : m));
+      }
     } catch (e) {
       console.error("Coach chat error:", e);
       toast({ title: "Connection error", description: "Could not reach the coach.", variant: "destructive" });
@@ -118,8 +177,30 @@ const AppLayout = () => {
     setIsLoading(false);
   };
 
-  const coachStyle = getCoachStyle();
-  const coachName = COACH_NAMES[coachStyle] || "Coach";
+  const sendMessage = async () => {
+    const text = input.trim();
+    if (!text || isLoading) return;
+
+    const userMsg: Msg = { role: "user", content: text };
+    setInput("");
+    setMessages(prev => [...prev, userMsg]);
+    setIsLoading(true);
+
+    const allMessages = [...messages, userMsg];
+    await streamCoachResponse(allMessages);
+  };
+
+  const switchCoach = (coach: CoachStyle) => {
+    setActiveCoach(coach);
+    setMessages([]);
+    const profile = getProfile();
+    if (profile) {
+      profile.coachStyle = coach;
+      saveProfile(profile);
+    }
+  };
+
+  const currentCoach = COACHES.find(c => c.id === activeCoach) || COACHES[0];
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -191,22 +272,40 @@ const AppLayout = () => {
           isMobile ? 'inset-2 bottom-20' : 'bottom-6 right-6 w-96 h-[500px]'
         }`}>
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-border">
-            <div>
-              <p className="font-display font-bold text-sm text-foreground">{coachName}</p>
-              <p className="text-xs text-muted-foreground font-body">AI Basketball Coach</p>
+          <div className="flex items-center justify-between p-3 border-b border-border">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">{currentCoach.emoji}</span>
+              <div>
+                <p className="font-display font-bold text-sm text-foreground">{currentCoach.name}</p>
+                <p className="text-[10px] text-muted-foreground font-body">AI Coach</p>
+              </div>
             </div>
-            <button onClick={() => setChatOpen(false)} className="text-muted-foreground hover:text-foreground">
-              <X size={18} />
-            </button>
+            <div className="flex items-center gap-1">
+              {/* Coach selector */}
+              {COACHES.map(c => (
+                <button
+                  key={c.id}
+                  onClick={() => switchCoach(c.id)}
+                  className={`w-7 h-7 rounded-full text-sm flex items-center justify-center transition-all ${
+                    activeCoach === c.id ? 'bg-primary/20 ring-1 ring-primary' : 'hover:bg-muted'
+                  }`}
+                  title={c.name}
+                >
+                  {c.emoji}
+                </button>
+              ))}
+              <button onClick={() => setChatOpen(false)} className="ml-1 text-muted-foreground hover:text-foreground">
+                <X size={18} />
+              </button>
+            </div>
           </div>
 
           {/* Messages */}
           <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3">
             {messages.length === 0 && (
               <div className="text-center py-8">
-                <MessageCircle size={32} className="mx-auto text-muted-foreground mb-3" />
-                <p className="font-display font-bold text-sm text-foreground">Ask your coach anything</p>
+                <span className="text-4xl block mb-3">{currentCoach.emoji}</span>
+                <p className="font-display font-bold text-sm text-foreground">Ask {currentCoach.name} anything</p>
                 <p className="text-xs text-muted-foreground font-body mt-1">"How do I improve my crossover?" or "What should I work on today?"</p>
               </div>
             )}
@@ -239,7 +338,7 @@ const AppLayout = () => {
               <input
                 value={input}
                 onChange={e => setInput(e.target.value)}
-                placeholder="Ask your coach..."
+                placeholder={`Ask ${currentCoach.name}...`}
                 className="flex-1 h-10 px-3 rounded-md border border-border bg-background text-foreground text-sm font-body placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 disabled={isLoading}
               />
