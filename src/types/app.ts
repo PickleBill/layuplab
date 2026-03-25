@@ -1,12 +1,18 @@
 export type SkillLevel = 'beginner' | 'intermediate' | 'advanced';
 
+export type CommitmentLevel = 'starting' | 'working' | 'competing';
+
+export type CoachStyle = 'motivator' | 'drill_sergeant' | 'technician';
+
+export type Tier = 'prove_it' | 'lock_in' | 'no_limits';
+
 export type Goal = 'shooting' | 'ball_handling' | 'speed_agility' | 'conditioning' | 'overall';
 
 export type Equipment = 'hoop' | 'cones' | 'resistance_band' | 'jump_rope' | 'none';
 
 export type DrillCategory = 'shooting' | 'dribbling' | 'footwork' | 'conditioning' | 'agility';
 
-export type Difficulty = 1 | 2 | 3; // 1=easy, 2=medium, 3=hard
+export type Difficulty = 1 | 2 | 3;
 
 export type DayOfWeek = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
 
@@ -17,7 +23,7 @@ export interface Drill {
   name: string;
   category: DrillCategory;
   difficulty: Difficulty;
-  duration: number; // seconds
+  duration: number;
   reps?: number;
   equipment: Equipment[];
   description: string;
@@ -29,6 +35,9 @@ export interface Drill {
 export interface PlayerProfile {
   username: string;
   skillLevel: SkillLevel;
+  commitmentLevel: CommitmentLevel;
+  coachStyle: CoachStyle;
+  tier: Tier;
   goals: Goal[];
   equipment: Equipment[];
   daysPerWeek: number;
@@ -46,7 +55,7 @@ export interface PlayerStats {
   totalDrillsCompleted: number;
   totalTrainingMinutes: number;
   lastWorkoutDate: string | null;
-  skillRatings: Record<DrillCategory, number>; // 0-100
+  skillRatings: Record<DrillCategory, number>;
   achievements: string[];
 }
 
@@ -54,19 +63,19 @@ export interface DrillSession {
   drillId: string;
   completedAt: string;
   rating: 'easy' | 'good' | 'hard';
-  duration: number; // actual seconds spent
+  duration: number;
 }
 
 export interface DayPlan {
   day: DayOfWeek;
   focus: DrillCategory[];
-  drills: string[]; // drill IDs
+  drills: string[];
   isRestDay: boolean;
 }
 
 export interface WeeklyPlan {
   id: string;
-  weekOf: string; // ISO date of Monday
+  weekOf: string;
   days: DayPlan[];
   generatedAt: string;
 }
@@ -76,7 +85,7 @@ export interface DailyChallenge {
   title: string;
   description: string;
   category: DrillCategory;
-  target: number; // reps or seconds
+  target: number;
   xpReward: number;
   date: string;
   completed: boolean;

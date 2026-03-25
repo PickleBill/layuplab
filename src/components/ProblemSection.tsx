@@ -18,12 +18,12 @@ const ProblemSection = () => {
             The End of Junk Miles.
           </h2>
           <p className="font-body text-muted-foreground text-lg leading-relaxed">
-            Most solo players spend hours at the court but never see their shooting percentage rise. Why? Because they lack professional feedback. Layup Lab captures your movement through your phone's camera, providing instant biomechanical corrections—just like a{" "}
-            <span className="text-primary font-semibold">$100/hour private trainer</span>.
+            You're putting in the hours, but nobody's watching. No coach. No feedback. No structure. Just you and a hoop — grinding without knowing if you're getting better or just getting tired. Layup Lab changes that. Get the same corrections a{" "}
+            <span className="text-primary font-semibold">$100/hour coach</span>{" "}
+            would give you — for a fraction of the cost.
           </p>
         </motion.div>
 
-        {/* Stats row */}
         <motion.div
           className="grid grid-cols-1 sm:grid-cols-3 gap-8 mt-16 max-w-3xl mx-auto"
           initial={{ opacity: 0, y: 30 }}

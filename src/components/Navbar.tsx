@@ -14,9 +14,10 @@ const Navbar = () => {
 
         <div className="hidden md:flex items-center gap-8">
           <a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors font-body">Features</a>
+          <a href="#how-it-works" className="text-sm text-muted-foreground hover:text-foreground transition-colors font-body">How It Works</a>
           <a href="#pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors font-body">Pricing</a>
           <a href="#testimonials" className="text-sm text-muted-foreground hover:text-foreground transition-colors font-body">Results</a>
-          <Button variant="hero" size="sm" onClick={() => window.location.href = '/onboarding'}>Start Free Trial</Button>
+          <Button variant="hero" size="sm" onClick={() => window.location.href = '/onboarding'}>Get Started</Button>
         </div>
 
         <button
@@ -30,9 +31,10 @@ const Navbar = () => {
       {isOpen && (
         <div className="md:hidden bg-background border-b border-border px-6 pb-6 space-y-4">
           <a href="#features" className="block text-sm text-muted-foreground hover:text-foreground font-body">Features</a>
+          <a href="#how-it-works" className="block text-sm text-muted-foreground hover:text-foreground font-body">How It Works</a>
           <a href="#pricing" className="block text-sm text-muted-foreground hover:text-foreground font-body">Pricing</a>
           <a href="#testimonials" className="block text-sm text-muted-foreground hover:text-foreground font-body">Results</a>
-          <Button variant="hero" size="default" className="w-full" onClick={() => window.location.href = '/onboarding'}>Start Free Trial</Button>
+          <Button variant="hero" size="default" className="w-full" onClick={() => window.location.href = '/onboarding'}>Get Started</Button>
         </div>
       )}
     </nav>

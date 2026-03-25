@@ -11,7 +11,6 @@ const GOAL_TO_CATEGORIES: Record<string, DrillCategory[]> = {
   overall: ['shooting', 'dribbling', 'footwork', 'conditioning', 'agility'],
 };
 
-// Priority order for sorting drills within a day: shooting first, then footwork, dribbling, agility, conditioning
 const CATEGORY_PRIORITY: Record<DrillCategory, number> = {
   shooting: 0,
   footwork: 1,
@@ -46,7 +45,6 @@ function pickDrillsForDay(
     }
   }
 
-  // Sort picked drills: shooting first (lowest difficulty first within shooting), then by category priority
   picked.sort((a, b) => {
     const drillA = getDrillById(a);
     const drillB = getDrillById(b);
@@ -60,22 +58,70 @@ function pickDrillsForDay(
   return picked;
 }
 
+/**
+ * Ensures form shooting (s1 or s2 fallback) is always the first drill.
+ */
+function ensureFormShootingFirst(drills: string[], availableDrills: Drill[], sessionLengthSec: number): string[] {
+  const FORM_SHOOTING_ID = 's1';
+  const FALLBACK_ID = 's2';
+
+  // Check if s1 or s2 is already in the list
+  const formIdx = drills.indexOf(FORM_SHOOTING_ID);
+  if (formIdx === 0) return drills; // already first
+
+  if (formIdx > 0) {
+    // Move it to front
+    const result = [...drills];
+    result.splice(formIdx, 1);
+    result.unshift(FORM_SHOOTING_ID);
+    return result;
+  }
+
+  // s1 not in list — check if it's available
+  const formDrill = availableDrills.find(d => d.id === FORM_SHOOTING_ID);
+  const fallbackDrill = availableDrills.find(d => d.id === FALLBACK_ID);
+  const drillToInsert = formDrill || fallbackDrill;
+
+  if (!drillToInsert) return drills; // neither available
+
+  // Check if fallback is already there
+  const fallbackIdx = drills.indexOf(FALLBACK_ID);
+  if (fallbackIdx === 0) return drills;
+  if (fallbackIdx > 0) {
+    const result = [...drills];
+    result.splice(fallbackIdx, 1);
+    result.unshift(FALLBACK_ID);
+    return result;
+  }
+
+  // Insert and trim to fit time budget
+  const result = [drillToInsert.id, ...drills];
+  let totalTime = result.reduce((sum, id) => {
+    const d = getDrillById(id);
+    return sum + (d?.duration || 0);
+  }, 0);
+
+  while (totalTime > sessionLengthSec && result.length > 1) {
+    const removed = result.pop()!;
+    const removedDrill = getDrillById(removed);
+    totalTime -= removedDrill?.duration || 0;
+  }
+
+  return result;
+}
+
 export function generateWeeklyPlan(profile: PlayerProfile): WeeklyPlan {
   const { skillLevel, goals, equipment, sessionLength, trainingDays } = profile;
   const sessionSec = sessionLength * 60;
 
-  // Get all categories the player cares about
   const focusCategories = [...new Set(goals.flatMap(g => GOAL_TO_CATEGORIES[g] || []))];
   if (focusCategories.length === 0) focusCategories.push('shooting', 'dribbling', 'footwork');
 
-  // Get available drills
   const available = getFilteredDrills(skillLevel, equipment);
 
-  // Determine which days are training days
   const trainingDaySet = new Set<DayOfWeek>(trainingDays || []);
   const useCustomDays = trainingDays && trainingDays.length > 0;
 
-  // Fallback: auto-distribute if no custom days
   let trainingDayIndices: number[] = [];
   if (useCustomDays) {
     trainingDayIndices = ALL_DAYS
@@ -95,7 +141,6 @@ export function generateWeeklyPlan(profile: PlayerProfile): WeeklyPlan {
       return { day, focus: [], drills: [], isRestDay: true };
     }
 
-    // Rotate focus categories across training days
     const dayIndex = trainingDayIndices.indexOf(index);
     const numFocusPerDay = Math.min(2, focusCategories.length);
     const startCatIndex = (dayIndex * numFocusPerDay) % focusCategories.length;
@@ -104,7 +149,9 @@ export function generateWeeklyPlan(profile: PlayerProfile): WeeklyPlan {
       dayFocus.push(focusCategories[(startCatIndex + i) % focusCategories.length]);
     }
 
-    const drills = pickDrillsForDay(dayFocus, available, sessionSec);
+    let drills = pickDrillsForDay(dayFocus, available, sessionSec);
+    // Force form shooting first on every training day
+    drills = ensureFormShootingFirst(drills, available, sessionSec);
 
     return { day, focus: dayFocus, drills, isRestDay: false };
   });
@@ -121,6 +168,6 @@ export function generateWeeklyPlan(profile: PlayerProfile): WeeklyPlan {
 }
 
 export function getTodaysPlan(plan: WeeklyPlan): DayPlan | null {
-  const dayIndex = (new Date().getDay() + 6) % 7; // 0=Mon
+  const dayIndex = (new Date().getDay() + 6) % 7;
   return plan.days[dayIndex] || null;
 }

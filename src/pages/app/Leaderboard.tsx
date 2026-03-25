@@ -1,22 +1,40 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { getStats, getProfile } from "@/lib/storage";
 import { ALL_ACHIEVEMENTS, getUnlockedAchievements, getLockedAchievements } from "@/lib/achievements";
-import { Trophy, Crown, Users } from "lucide-react";
+import { Trophy, Crown, Activity, Bell } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+
+const MOCK_FEED = [
+  { id: '1', avatar: '🏀', name: 'Marcus T.', text: 'Completed a 45-min shooting session — 87 form shots, 23 free throws', time: '2h ago' },
+  { id: '2', avatar: '🔥', name: 'Jaylen R.', text: 'Earned the 🔥 7-Day Streak badge', time: '4h ago' },
+  { id: '3', avatar: '⭐', name: 'Aisha M.', text: 'Unlocked Varsity rank — 2,500 XP', time: '6h ago' },
+  { id: '4', avatar: '💪', name: 'Devon K.', text: 'Crushed 100 defensive slides and 3 sets of suicides', time: '8h ago' },
+];
 
 const Leaderboard = () => {
   const stats = getStats();
   const profile = getProfile();
   const unlockedAchievements = getUnlockedAchievements(stats.achievements);
   const lockedAchievements = getLockedAchievements(stats.achievements);
+  const [email, setEmail] = useState("");
+  const { toast } = useToast();
+
+  const handleNotify = () => {
+    if (!email.trim()) return;
+    toast({ title: "You're on the list!", description: "We'll notify you when the training feed goes live." });
+    setEmail("");
+  };
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-8">
-      {/* Your Rank */}
+      {/* Your Stats */}
       <div>
         <div className="flex items-center gap-2 mb-6">
-          <Users size={22} className="text-primary" />
-          <h1 className="font-display font-extrabold text-2xl text-foreground">Leaderboard</h1>
+          <Activity size={22} className="text-primary" />
+          <h1 className="font-display font-extrabold text-2xl text-foreground">Your Training Feed</h1>
         </div>
 
         {/* Current User Card */}
@@ -62,14 +80,50 @@ const Leaderboard = () => {
             </div>
           </div>
         </motion.div>
+      </div>
 
-        {/* Coming Soon */}
-        <div className="mt-6 rounded-lg border border-border bg-card/50 p-8 text-center">
-          <Users size={32} className="mx-auto text-muted-foreground mb-3" />
-          <p className="font-display font-bold text-foreground mb-1">Community Leaderboard Coming Soon</p>
-          <p className="text-sm text-muted-foreground font-body max-w-md mx-auto">
-            As more players join Layup Lab, you'll be able to compete and compare your progress with others. Keep training to secure your spot at the top!
-          </p>
+      {/* Strava-Style Feed Preview */}
+      <div>
+        <p className="text-sm text-muted-foreground font-body mb-4">Preview — what your feed will look like:</p>
+        <div className="space-y-3">
+          {MOCK_FEED.map((item, i) => (
+            <motion.div
+              key={item.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.08 }}
+              className="rounded-lg border border-border bg-card p-4 flex items-start gap-3"
+            >
+              <span className="text-2xl">{item.avatar}</span>
+              <div className="flex-1 min-w-0">
+                <p className="font-display font-bold text-sm text-foreground">{item.name}</p>
+                <p className="text-sm text-muted-foreground font-body">{item.text}</p>
+              </div>
+              <span className="text-xs text-muted-foreground font-body shrink-0">{item.time}</span>
+            </motion.div>
+          ))}
+        </div>
+
+        <div className="mt-6 rounded-lg border border-border bg-card/50 p-6 text-center space-y-4">
+          <Activity size={28} className="mx-auto text-muted-foreground" />
+          <div>
+            <p className="font-display font-bold text-foreground mb-1">Training feed launching soon</p>
+            <p className="text-sm text-muted-foreground font-body max-w-md mx-auto">
+              Your sessions will be public by default — keep yourself accountable. You can make individual sessions private anytime.
+            </p>
+          </div>
+          <div className="flex gap-2 max-w-sm mx-auto">
+            <input
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="your@email.com"
+              className="flex-1 h-10 px-3 rounded-md border border-border bg-card text-foreground text-sm font-body placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+            <Button variant="hero" size="sm" onClick={handleNotify}>
+              <Bell size={14} className="mr-1" /> Notify Me
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -80,7 +134,6 @@ const Leaderboard = () => {
           <h2 className="font-display font-extrabold text-2xl text-foreground">Achievement Badges</h2>
         </div>
 
-        {/* Unlocked */}
         {unlockedAchievements.length > 0 && (
           <div className="mb-6">
             <p className="text-sm text-muted-foreground font-body mb-3">Unlocked ({unlockedAchievements.length}/{ALL_ACHIEVEMENTS.length})</p>
@@ -103,7 +156,6 @@ const Leaderboard = () => {
           </div>
         )}
 
-        {/* Locked */}
         <div>
           <p className="text-sm text-muted-foreground font-body mb-3">Locked ({lockedAchievements.length})</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
