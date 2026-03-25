@@ -33,6 +33,7 @@ const App = () => (
               <Route index element={<Navigate to="/app/dashboard" replace />} />
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="train" element={<Train />} />
+              <Route path="drills" element={<DrillLibrary />} />
               <Route path="plan" element={<Plan />} />
               <Route path="progress" element={<Progress />} />
               <Route path="analyze" element={<Analyze />} />

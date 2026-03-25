@@ -2,7 +2,7 @@ export type SkillLevel = 'beginner' | 'intermediate' | 'advanced';
 
 export type CommitmentLevel = 'starting' | 'working' | 'competing';
 
-export type CoachStyle = 'motivator' | 'drill_sergeant' | 'technician';
+export type CoachStyle = 'kobe' | 'lebron' | 'curry' | 'sir_charles' | 'phil';
 
 export type Tier = 'prove_it' | 'lock_in' | 'no_limits';
 

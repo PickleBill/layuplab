@@ -141,6 +141,12 @@ export function hasCompletedOnboarding(): boolean {
   return getProfile() !== null;
 }
 
+export function hasDetailedProfile(): boolean {
+  const p = getProfile();
+  if (!p) return false;
+  return !(p.goals.length === 1 && p.goals[0] === 'overall' && p.equipment.length === 1 && p.equipment[0] === 'none');
+}
+
 export function resetAllData(): void {
   Object.values(KEYS).forEach(k => localStorage.removeItem(k));
 }
