@@ -1,7 +1,11 @@
 import { Outlet, useNavigate } from "react-router-dom";
+import { useState, useRef, useEffect } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { LayoutDashboard, Dumbbell, Calendar, BarChart3, Video, Trophy, Users } from "lucide-react";
+import { LayoutDashboard, Dumbbell, Calendar, BarChart3, Video, Trophy, Users, MessageCircle, X, Send } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
+import { Button } from "@/components/ui/button";
+import { getCoachStyle } from "@/lib/storage";
+import { useToast } from "@/hooks/use-toast";
 
 const navItems = [
   { to: "/app/dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -13,9 +17,109 @@ const navItems = [
   { to: "/app/leaderboard", icon: Users, label: "Ranks" },
 ];
 
+type Msg = { role: "user" | "assistant"; content: string };
+
+const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/coach-chat`;
+
+const COACH_NAMES = {
+  motivator: "Coach Hype",
+  drill_sergeant: "Coach Steel",
+  technician: "Coach Precision",
+} as const;
+
 const AppLayout = () => {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
+  const [chatOpen, setChatOpen] = useState(false);
+  const [messages, setMessages] = useState<Msg[]>([]);
+  const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages, chatOpen]);
+
+  const sendMessage = async () => {
+    const text = input.trim();
+    if (!text || isLoading) return;
+
+    const userMsg: Msg = { role: "user", content: text };
+    setInput("");
+    setMessages(prev => [...prev, userMsg]);
+    setIsLoading(true);
+
+    let assistantSoFar = "";
+    const allMessages = [...messages, userMsg];
+
+    try {
+      const resp = await fetch(CHAT_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({ messages: allMessages, coachStyle: getCoachStyle() }),
+      });
+
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({ error: "Request failed" }));
+        toast({ title: "Coach unavailable", description: err.error || "Try again later.", variant: "destructive" });
+        setIsLoading(false);
+        return;
+      }
+
+      if (!resp.body) throw new Error("No response body");
+
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let textBuffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        textBuffer += decoder.decode(value, { stream: true });
+
+        let newlineIndex: number;
+        while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
+          let line = textBuffer.slice(0, newlineIndex);
+          textBuffer = textBuffer.slice(newlineIndex + 1);
+          if (line.endsWith("\r")) line = line.slice(0, -1);
+          if (line.startsWith(":") || line.trim() === "") continue;
+          if (!line.startsWith("data: ")) continue;
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === "[DONE]") break;
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const content = parsed.choices?.[0]?.delta?.content;
+            if (content) {
+              assistantSoFar += content;
+              setMessages(prev => {
+                const last = prev[prev.length - 1];
+                if (last?.role === "assistant") {
+                  return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: assistantSoFar } : m);
+                }
+                return [...prev, { role: "assistant", content: assistantSoFar }];
+              });
+            }
+          } catch {
+            textBuffer = line + "\n" + textBuffer;
+            break;
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Coach chat error:", e);
+      toast({ title: "Connection error", description: "Could not reach the coach.", variant: "destructive" });
+    }
+    setIsLoading(false);
+  };
+
+  const coachStyle = getCoachStyle();
+  const coachName = COACH_NAMES[coachStyle] || "Coach";
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -41,7 +145,7 @@ const AppLayout = () => {
             ))}
           </nav>
           <div className="p-4 border-t border-border">
-            <p className="text-xs text-muted-foreground font-body">LayupLab v1.0</p>
+            <p className="text-xs text-muted-foreground font-body">LayupLab v2.0</p>
           </div>
         </aside>
       )}
@@ -66,6 +170,85 @@ const AppLayout = () => {
             </NavLink>
           ))}
         </nav>
+      )}
+
+      {/* Floating Ask Coach Button */}
+      {!chatOpen && (
+        <button
+          onClick={() => setChatOpen(true)}
+          className={`fixed z-50 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:scale-105 transition-transform ${
+            isMobile ? 'bottom-24 right-4' : 'bottom-6 right-6'
+          }`}
+          style={{ boxShadow: '0 4px 20px hsla(var(--primary) / 0.4)' }}
+        >
+          <MessageCircle size={24} />
+        </button>
+      )}
+
+      {/* Chat Drawer */}
+      {chatOpen && (
+        <div className={`fixed z-50 bg-card border border-border rounded-lg shadow-2xl flex flex-col ${
+          isMobile ? 'inset-2 bottom-20' : 'bottom-6 right-6 w-96 h-[500px]'
+        }`}>
+          {/* Header */}
+          <div className="flex items-center justify-between p-4 border-b border-border">
+            <div>
+              <p className="font-display font-bold text-sm text-foreground">{coachName}</p>
+              <p className="text-xs text-muted-foreground font-body">AI Basketball Coach</p>
+            </div>
+            <button onClick={() => setChatOpen(false)} className="text-muted-foreground hover:text-foreground">
+              <X size={18} />
+            </button>
+          </div>
+
+          {/* Messages */}
+          <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3">
+            {messages.length === 0 && (
+              <div className="text-center py-8">
+                <MessageCircle size={32} className="mx-auto text-muted-foreground mb-3" />
+                <p className="font-display font-bold text-sm text-foreground">Ask your coach anything</p>
+                <p className="text-xs text-muted-foreground font-body mt-1">"How do I improve my crossover?" or "What should I work on today?"</p>
+              </div>
+            )}
+            {messages.map((msg, i) => (
+              <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[80%] rounded-lg px-3 py-2 text-sm font-body ${
+                  msg.role === 'user'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted text-foreground'
+                }`}>
+                  {msg.content}
+                </div>
+              </div>
+            ))}
+            {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
+              <div className="flex justify-start">
+                <div className="bg-muted rounded-lg px-3 py-2 text-sm text-muted-foreground font-body">
+                  Thinking...
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Input */}
+          <div className="p-3 border-t border-border">
+            <form
+              className="flex gap-2"
+              onSubmit={e => { e.preventDefault(); sendMessage(); }}
+            >
+              <input
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                placeholder="Ask your coach..."
+                className="flex-1 h-10 px-3 rounded-md border border-border bg-background text-foreground text-sm font-body placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                disabled={isLoading}
+              />
+              <Button type="submit" variant="hero" size="sm" disabled={isLoading || !input.trim()}>
+                <Send size={16} />
+              </Button>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );
