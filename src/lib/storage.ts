@@ -31,7 +31,7 @@ export function saveProfile(profile: PlayerProfile): void {
 }
 
 export function getCoachStyle(): CoachStyle {
-  return getProfile()?.coachStyle || 'motivator';
+  return getProfile()?.coachStyle || 'kobe';
 }
 
 // Stats
@@ -139,6 +139,12 @@ export function saveAnalysisRecord(record: AnalysisRecord): void {
 
 export function hasCompletedOnboarding(): boolean {
   return getProfile() !== null;
+}
+
+export function hasDetailedProfile(): boolean {
+  const p = getProfile();
+  if (!p) return false;
+  return !(p.goals.length === 1 && p.goals[0] === 'overall' && p.equipment.length === 1 && p.equipment[0] === 'none');
 }
 
 export function resetAllData(): void {

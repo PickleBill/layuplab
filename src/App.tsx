@@ -15,6 +15,7 @@ import Progress from "./pages/app/Progress.tsx";
 import Analyze from "./pages/app/Analyze.tsx";
 import Challenges from "./pages/app/Challenges.tsx";
 import Leaderboard from "./pages/app/Leaderboard.tsx";
+import DrillLibrary from "./pages/app/DrillLibrary.tsx";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +33,7 @@ const App = () => (
               <Route index element={<Navigate to="/app/dashboard" replace />} />
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="train" element={<Train />} />
+              <Route path="drills" element={<DrillLibrary />} />
               <Route path="plan" element={<Plan />} />
               <Route path="progress" element={<Progress />} />
               <Route path="analyze" element={<Analyze />} />

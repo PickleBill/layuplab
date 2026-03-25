@@ -18,23 +18,35 @@ const ACHIEVEMENTS_MAP: Record<string, { title: string; icon: string }> = {
 };
 
 const COACH_TIPS: Record<CoachStyle, string[]> = {
-  motivator: [
-    "Every rep counts! Even 10 minutes of form shooting today puts you ahead of yesterday. 🏀",
-    "You showed up — that's already more than most. Let's make it count! 💪",
-    "Small wins stack up. Trust the process and watch yourself level up.",
-    "Remember: Steph Curry started with form shots too. Keep going!",
-  ],
-  drill_sergeant: [
+  kobe: [
     "No excuses today. Get to the court and put in the work. Form shooting first — always.",
-    "You think you're tired? Your competition isn't resting. Get after it.",
-    "Stop scrolling and start shooting. The court is waiting.",
+    "You think one workout is enough? Do it again. Mamba Mentality.",
+    "I used to start at 4am. What time are you starting?",
     "Discipline beats motivation every single day. Show up.",
   ],
-  technician: [
-    "Focus on your guide hand today — it should come off the ball at release, not push sideways.",
-    "Track your shooting arc. Optimal release angle is 45-52°. Film yourself and check.",
+  lebron: [
+    "Every rep counts! Even 10 minutes of form shooting today puts you ahead of yesterday. 🏀",
+    "Build your game systematically. What's your weakest link today?",
+    "Small wins stack up. Trust the process and watch yourself level up.",
+    "Recovery is just as important as the grind. Take care of your body.",
+  ],
+  curry: [
+    "Shooting is an art — let's find your rhythm today! 🎯",
+    "Remember: I started with form shots too. Keep going!",
+    "Have fun out there. The best players love the work.",
+    "One more rep. One more shot. That's how you change the game.",
+  ],
+  sir_charles: [
+    "That jumper is turrible. Let me fix it. Get to the court!",
+    "I was the Round Mound of Rebound and I still outworked everyone. Your turn.",
+    "Stop making excuses. Even I made the Hall of Fame without a ring. Effort matters!",
+    "You know what's turrible? Not practicing. Get out there!",
+  ],
+  phil: [
+    "Focus on your breathing before each shot. The mind leads the body.",
+    "Basketball is a dance, not a fight. Find your flow today.",
+    "The strength of your game is built in moments of stillness. Practice with intention.",
     "Footwork tip: Your pivot foot placement determines your entire shot mechanics. Start there.",
-    "Analyze your follow-through. Hold it until the ball reaches the rim. Consistency is data.",
   ],
 };
 
@@ -118,7 +130,7 @@ const Dashboard = () => {
           <p className="font-display font-bold text-sm text-foreground mb-1">
             Coach's Tip
             <span className="text-xs text-muted-foreground font-body ml-2">
-              ({coachStyle === 'motivator' ? 'The Motivator' : coachStyle === 'drill_sergeant' ? 'The Drill Sergeant' : 'The Technician'})
+              ({coachStyle === 'kobe' ? 'Kobe' : coachStyle === 'lebron' ? 'LeBron' : coachStyle === 'curry' ? 'Curry' : coachStyle === 'sir_charles' ? 'Sir Charles' : 'Phil Jackson'})
             </span>
           </p>
           <p className="text-sm text-muted-foreground font-body">{tips[tipIndex]}</p>
