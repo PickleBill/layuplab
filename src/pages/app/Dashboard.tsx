@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Flame, Dumbbell, Clock, Trophy, ChevronRight, ChevronDown, ChevronUp, MessageSquare, BookOpen, MessageCircle, Video, Target, X } from "lucide-react";
+import { Flame, Dumbbell, Clock, Trophy, ChevronRight, ChevronDown, ChevronUp, MessageSquare, BookOpen, MessageCircle, Video, Target, X, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +9,7 @@ import { getProfile, getStats, getPlan, getSessions, getCoachStyle, hasBeenWelco
 import { getXpProgress, getXpForCurrentLevel, XP_PER_LEVEL } from "@/lib/xp";
 import { getTodaysPlan } from "@/lib/plan-generator";
 import { getDrillById } from "@/lib/drills";
+import { loadRecommendationsFromCloud, requestDrillRecommendations } from "@/lib/cloud-sync";
 import { CoachStyle, DayOfWeek } from "@/types/app";
 
 const DAY_LABELS: Record<DayOfWeek, string> = {
