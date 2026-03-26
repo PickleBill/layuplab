@@ -125,6 +125,61 @@ const Dashboard = () => {
         </div>
       </motion.div>
 
+      {/* First-Time Welcome Guide */}
+      {showWelcome && (
+        <motion.div
+          className="rounded-lg border border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10 p-5"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.05 }}
+        >
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-display font-bold text-lg text-foreground">
+              Welcome to the court, {profile.username}! 🏀
+            </h2>
+            <button onClick={dismissWelcome} className="text-muted-foreground hover:text-foreground transition-colors">
+              <X size={16} />
+            </button>
+          </div>
+          <p className="text-sm text-muted-foreground font-body mb-4">Here's how to get started:</p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <button
+              onClick={() => { dismissWelcome(); navigate("/app/train"); }}
+              className="flex items-center gap-3 p-4 rounded-md border border-border bg-card hover:border-primary/30 hover:bg-primary/5 transition-all text-left"
+            >
+              <span className="text-2xl">🏀</span>
+              <div>
+                <p className="font-display font-bold text-sm text-foreground">Start Today's Workout</p>
+                <p className="text-xs text-muted-foreground font-body">Your first session is ready</p>
+              </div>
+            </button>
+            <button
+              onClick={() => { dismissWelcome(); navigate("/app/drills"); }}
+              className="flex items-center gap-3 p-4 rounded-md border border-border bg-card hover:border-primary/30 hover:bg-primary/5 transition-all text-left"
+            >
+              <BookOpen size={20} className="text-primary shrink-0" />
+              <div>
+                <p className="font-display font-bold text-sm text-foreground">Browse Drill Library</p>
+                <p className="text-xs text-muted-foreground font-body">50+ drills with video demos</p>
+              </div>
+            </button>
+            <button
+              onClick={() => { dismissWelcome(); document.querySelector<HTMLButtonElement>('[data-coach-btn]')?.click(); }}
+              className="flex items-center gap-3 p-4 rounded-md border border-border bg-card hover:border-primary/30 hover:bg-primary/5 transition-all text-left"
+            >
+              <MessageCircle size={20} className="text-primary shrink-0" />
+              <div>
+                <p className="font-display font-bold text-sm text-foreground">Talk to Your Coach</p>
+                <p className="text-xs text-muted-foreground font-body">Ask Kobe, LeBron, or Curry</p>
+              </div>
+            </button>
+          </div>
+          <button onClick={dismissWelcome} className="mt-3 text-xs text-muted-foreground font-body hover:text-foreground transition-colors underline">
+            Dismiss — I'll explore on my own
+          </button>
+        </motion.div>
+      )}
+
       {/* Coach's Tip */}
       <motion.div
         className="rounded-lg border border-primary/20 bg-primary/5 p-4 flex items-start gap-3"
