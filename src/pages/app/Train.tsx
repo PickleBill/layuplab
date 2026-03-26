@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Play, Pause, SkipForward, Check, ChevronRight, Lightbulb, ArrowLeft, Video } from "lucide-react";
+import { toast } from "sonner";
 import { getPlan, getStats, saveStats, saveSession, updateStreak, addXp, updateSkillRating, addAchievement } from "@/lib/storage";
 import { getTodaysPlan } from "@/lib/plan-generator";
 import { getDrillById } from "@/lib/drills";
