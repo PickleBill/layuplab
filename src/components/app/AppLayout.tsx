@@ -1,7 +1,8 @@
 import { Outlet, useNavigate } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { LayoutDashboard, Dumbbell, BookOpen, Calendar, BarChart3, Video, Trophy, Users, MessageCircle, X, Send } from "lucide-react";
+import { LayoutDashboard, Dumbbell, BookOpen, Calendar, BarChart3, Video, Trophy, Users, MessageCircle, X, Send, LogOut } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import XpBar from "@/components/app/XpBar";
 import { NavLink } from "@/components/NavLink";
 import { Button } from "@/components/ui/button";
