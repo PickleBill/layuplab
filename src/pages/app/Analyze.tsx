@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Video, Upload, Camera, Loader2, Target, AlertTriangle, CheckCircle, ArrowLeft, X, Library, Calendar } from "lucide-react";
+import { Video, Upload, Camera, Loader2, Target, AlertTriangle, CheckCircle, ArrowLeft, X, Library, Calendar, MessageCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { getAnalysisHistory, saveAnalysisRecord } from "@/lib/storage";
@@ -257,10 +257,11 @@ const Analyze = () => {
 
   return (
     <div className="p-6 max-w-3xl mx-auto space-y-6">
+      {/* Aspirational Intro */}
       <div>
         <h1 className="font-display font-extrabold text-2xl text-foreground">AI Form Analysis</h1>
         <p className="text-sm text-muted-foreground font-body mt-1">
-          Upload a photo or video clip and get instant AI coaching feedback.
+          The pros film every practice. Upload your clip and let AI break down your mechanics.
         </p>
       </div>
 
@@ -384,6 +385,17 @@ const Analyze = () => {
                 {result && (
                   <>
                     {renderResults(result)}
+                    <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-center space-y-2">
+                      <p className="text-sm font-body text-foreground">
+                        🏆 You're already ahead of 90% of players by analyzing your form. Keep pushing!
+                      </p>
+                      <p className="text-xs text-muted-foreground font-body">
+                        Want to improve? Start with form shooting basics →
+                      </p>
+                      <Button variant="outline" size="sm" className="gap-1" onClick={() => document.querySelector<HTMLButtonElement>('[data-coach-btn]')?.click()}>
+                        <MessageCircle size={14} /> Chat with your coach about these results
+                      </Button>
+                    </div>
                     <Button variant="outline" className="w-full" onClick={() => { setImagePreview(null); setResult(null); }}>
                       <ArrowLeft size={16} /> Analyze Another
                     </Button>

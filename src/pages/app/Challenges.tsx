@@ -18,6 +18,7 @@ import { DailyChallenge, DrillCategory } from "@/types/app";
 import { XP_PER_CHALLENGE } from "@/lib/xp";
 
 const CHALLENGE_TEMPLATES = [
+  { title: 'Form Shooting Focus', description: 'Complete 10 minutes of form shooting', category: 'shooting' as DrillCategory, target: 10, isDaily: true },
   { title: 'Sharp Shooter', description: 'Complete 50 form shots', category: 'shooting' as DrillCategory, target: 50 },
   { title: 'Handle Master', description: 'Do 5 minutes of stationary dribbling', category: 'dribbling' as DrillCategory, target: 300 },
   { title: 'Quick Feet', description: 'Complete 100 defensive slides', category: 'footwork' as DrillCategory, target: 100 },
@@ -32,8 +33,12 @@ const CHALLENGE_TEMPLATES = [
 
 function generateDailyChallenges(): DailyChallenge[] {
   const today = new Date().toISOString().split('T')[0];
-  const shuffled = [...CHALLENGE_TEMPLATES].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, 3).map((t, i) => ({
+  // Always include the daily form shooting challenge
+  const formChallenge = CHALLENGE_TEMPLATES.find(t => t.isDaily)!;
+  const others = CHALLENGE_TEMPLATES.filter(t => !t.isDaily);
+  const shuffled = [...others].sort(() => Math.random() - 0.5);
+  const selected = [formChallenge, ...shuffled.slice(0, 2)];
+  return selected.map((t, i) => ({
     id: `${today}-${i}`,
     title: t.title,
     description: t.description,

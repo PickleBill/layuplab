@@ -2,6 +2,7 @@ import { Outlet, useNavigate } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { LayoutDashboard, Dumbbell, BookOpen, Calendar, BarChart3, Video, Trophy, Users, MessageCircle, X, Send } from "lucide-react";
+import XpBar from "@/components/app/XpBar";
 import { NavLink } from "@/components/NavLink";
 import { Button } from "@/components/ui/button";
 import { getCoachStyle, getProfile, hasDetailedProfile, saveProfile, savePlan } from "@/lib/storage";
@@ -219,6 +220,7 @@ const AppLayout = () => {
 
       {/* Main Content */}
       <main className={`flex-1 ${!isMobile ? 'ml-64' : ''} ${isMobile ? 'pb-20' : ''}`}>
+        <XpBar />
         <Outlet />
       </main>
 

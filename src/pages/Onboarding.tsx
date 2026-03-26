@@ -1,16 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
 import { PlayerProfile, CommitmentLevel, Goal, DayOfWeek } from "@/types/app";
 import { saveProfile, saveStats, getDefaultStats, savePlan } from "@/lib/storage";
 import { generateWeeklyPlan } from "@/lib/plan-generator";
 
 const COMMITMENT_LEVELS: { value: CommitmentLevel; label: string; desc: string; emoji: string }[] = [
-  { value: 'starting', emoji: '🌱', label: 'Just getting started', desc: "I want to learn the right way from day one" },
-  { value: 'working', emoji: '💪', label: "I'm putting in work", desc: "I train regularly and want to level up" },
-  { value: 'competing', emoji: '🔥', label: 'This is my life', desc: "I'm competing and I need every edge" },
+  { value: 'starting', emoji: '🌱', label: 'Just getting started', desc: "Learn the right way from day one" },
+  { value: 'working', emoji: '💪', label: "Putting in work", desc: "Train regularly, level up" },
+  { value: 'competing', emoji: '🔥', label: 'This is my life', desc: "Every edge counts" },
 ];
 
 const GOALS: { value: Goal; label: string; emoji: string }[] = [
@@ -30,7 +31,23 @@ const DAYS: { value: DayOfWeek; label: string }[] = [
   { value: 'sunday', label: 'Su' },
 ];
 
-const SESSION_LENGTHS = [30, 45, 60] as const;
+const SESSION_LABELS: Record<number, string> = {
+  15: '⚡ Quick session',
+  30: '🏃 Solid warmup',
+  45: '💪 Real work',
+  60: '🔥 Pro grind',
+  75: '🐍 Elite hours',
+  90: '🏆 Mamba hours',
+};
+
+const getSessionLabel = (mins: number) => {
+  const keys = Object.keys(SESSION_LABELS).map(Number).sort((a, b) => a - b);
+  let label = SESSION_LABELS[keys[0]];
+  for (const k of keys) {
+    if (mins >= k) label = SESSION_LABELS[k];
+  }
+  return label;
+};
 
 const commitmentToSkill = (c: CommitmentLevel) => {
   if (c === 'starting') return 'beginner' as const;
@@ -43,11 +60,16 @@ const Onboarding = () => {
   const [username, setUsername] = useState("");
   const [commitment, setCommitment] = useState<CommitmentLevel | null>(null);
   const [showCustomize, setShowCustomize] = useState(false);
-  const [sessionLength, setSessionLength] = useState<30 | 45 | 60>(45);
+  const [sessionLength, setSessionLength] = useState(45);
   const [selectedGoals, setSelectedGoals] = useState<Goal[]>([]);
   const [selectedDays, setSelectedDays] = useState<DayOfWeek[]>(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']);
 
   const canGo = username.trim().length >= 2 && commitment !== null;
+
+  // Auto-expand customization when commitment is selected
+  useEffect(() => {
+    if (commitment) setShowCustomize(true);
+  }, [commitment]);
 
   const toggleGoal = (g: Goal) => {
     setSelectedGoals(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g]);
@@ -86,45 +108,39 @@ const Onboarding = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <div className="text-center mb-8">
-          <h1 className="font-display font-extrabold text-4xl text-foreground mb-2">
+        <div className="text-center mb-6">
+          <h1 className="font-display font-extrabold text-3xl text-foreground mb-1">
             LAYUP<span className="text-primary">LAB</span>
           </h1>
-          <p className="text-muted-foreground font-body">Let's get you on the court.</p>
+          <p className="text-muted-foreground font-body text-sm">Let's get you on the court.</p>
         </div>
 
-        <div className="space-y-6">
-          {/* Name */}
-          <div className="space-y-2">
-            <label className="text-sm font-body text-muted-foreground">What should we call you?</label>
-            <input
-              value={username}
-              onChange={e => setUsername(e.target.value)}
-              placeholder="e.g. King James"
-              className="w-full h-12 px-4 rounded-md border border-border bg-card text-foreground font-body placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-              autoFocus
-            />
-          </div>
+        <div className="space-y-4">
+          {/* Name — compact */}
+          <input
+            value={username}
+            onChange={e => setUsername(e.target.value)}
+            placeholder="Your name (e.g. King James)"
+            className="w-full h-11 px-4 rounded-md border border-border bg-card text-foreground font-body text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            autoFocus
+          />
 
-          {/* Commitment */}
-          <div className="space-y-2">
-            <label className="text-sm font-body text-muted-foreground">How serious are you?</label>
-            <div className="space-y-2">
+          {/* Commitment — compact */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-body text-muted-foreground">How serious are you?</label>
+            <div className="grid grid-cols-3 gap-2">
               {COMMITMENT_LEVELS.map(c => (
                 <button
                   key={c.value}
                   onClick={() => setCommitment(c.value)}
-                  className={`w-full flex items-center gap-3 text-left p-4 rounded-md border transition-all ${
+                  className={`flex flex-col items-center text-center p-3 rounded-md border transition-all ${
                     commitment === c.value
                       ? 'border-primary bg-primary/10 glow-orange-border'
                       : 'border-border bg-card hover:border-muted-foreground/30'
                   }`}
                 >
-                  <span className="text-2xl">{c.emoji}</span>
-                  <div>
-                    <p className="font-display font-bold text-foreground">{c.label}</p>
-                    <p className="text-xs text-muted-foreground font-body">{c.desc}</p>
-                  </div>
+                  <span className="text-xl mb-1">{c.emoji}</span>
+                  <p className="font-display font-bold text-xs text-foreground leading-tight">{c.label}</p>
                 </button>
               ))}
             </div>
@@ -134,51 +150,52 @@ const Onboarding = () => {
           <div className="rounded-md border border-border bg-card overflow-hidden">
             <button
               onClick={() => setShowCustomize(!showCustomize)}
-              className="w-full flex items-center justify-between p-4 text-left hover:bg-muted/30 transition-colors"
+              className="w-full flex items-center justify-between p-3 text-left hover:bg-muted/30 transition-colors"
             >
               <div>
-                <p className="font-display font-bold text-sm text-foreground">Customize your plan</p>
-                <p className="text-xs text-muted-foreground font-body">Optional — set goals, schedule & session length</p>
+                <p className="font-display font-bold text-xs text-foreground">Customize your plan</p>
+                <p className="text-[10px] text-muted-foreground font-body">Optional — goals, schedule & session length</p>
               </div>
-              {showCustomize ? <ChevronUp size={18} className="text-muted-foreground" /> : <ChevronDown size={18} className="text-muted-foreground" />}
+              {showCustomize ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
             </button>
 
             {showCustomize && (
               <motion.div
-                className="px-4 pb-4 space-y-5 border-t border-border pt-4"
+                className="px-3 pb-3 space-y-4 border-t border-border pt-3"
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 transition={{ duration: 0.2 }}
               >
-                {/* Session Length */}
-                <div className="space-y-2">
-                  <label className="text-xs font-body text-muted-foreground">Session length</label>
-                  <div className="flex gap-2">
-                    {SESSION_LENGTHS.map(len => (
-                      <button
-                        key={len}
-                        onClick={() => setSessionLength(len)}
-                        className={`flex-1 py-2 rounded-md border text-sm font-display font-bold transition-all ${
-                          sessionLength === len
-                            ? 'border-primary bg-primary/10 text-primary'
-                            : 'border-border bg-background text-muted-foreground hover:border-muted-foreground/30'
-                        }`}
-                      >
-                        {len} min
-                      </button>
-                    ))}
+                {/* Session Length Slider */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-body text-muted-foreground">How long can you train?</label>
+                    <span className="font-display font-extrabold text-lg text-primary">{sessionLength} min</span>
                   </div>
+                  <Slider
+                    value={[sessionLength]}
+                    onValueChange={([v]) => setSessionLength(v)}
+                    min={15}
+                    max={90}
+                    step={15}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-[10px] text-muted-foreground font-body">
+                    <span>15 min</span>
+                    <span>90 min</span>
+                  </div>
+                  <p className="text-center text-xs font-body text-primary/80">{getSessionLabel(sessionLength)}</p>
                 </div>
 
                 {/* Goals */}
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <label className="text-xs font-body text-muted-foreground">What do you want to work on?</label>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-1.5">
                     {GOALS.map(g => (
                       <button
                         key={g.value}
                         onClick={() => toggleGoal(g.value)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm font-body transition-all ${
+                        className={`flex items-center gap-1 px-2.5 py-1 rounded-full border text-xs font-body transition-all ${
                           selectedGoals.includes(g.value)
                             ? 'border-primary bg-primary/10 text-primary'
                             : 'border-border bg-background text-muted-foreground hover:border-muted-foreground/30'
@@ -190,19 +207,19 @@ const Onboarding = () => {
                     ))}
                   </div>
                   {selectedGoals.length === 0 && (
-                    <p className="text-[10px] text-muted-foreground font-body">None selected = overall training</p>
+                    <p className="text-[10px] text-muted-foreground font-body">None = overall training</p>
                   )}
                 </div>
 
                 {/* Training Days */}
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <label className="text-xs font-body text-muted-foreground">Training days</label>
                   <div className="flex gap-1.5">
                     {DAYS.map(d => (
                       <button
                         key={d.value}
                         onClick={() => toggleDay(d.value)}
-                        className={`w-10 h-10 rounded-full border text-xs font-display font-bold transition-all ${
+                        className={`w-9 h-9 rounded-full border text-xs font-display font-bold transition-all ${
                           selectedDays.includes(d.value)
                             ? 'border-primary bg-primary/10 text-primary'
                             : 'border-border bg-background text-muted-foreground hover:border-muted-foreground/30'
@@ -227,8 +244,8 @@ const Onboarding = () => {
             Let's Go 🚀
           </Button>
 
-          <p className="text-center text-xs text-muted-foreground font-body">
-            Your AI coach can fine-tune your plan anytime inside the app.
+          <p className="text-center text-[10px] text-muted-foreground font-body">
+            Your AI coach can fine-tune your plan anytime.
           </p>
         </div>
       </motion.div>
