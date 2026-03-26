@@ -233,6 +233,7 @@ export function getPlan(): WeeklyPlan | null {
 
 export function savePlan(plan: WeeklyPlan): void {
   set(KEYS.plan, plan);
+  syncPlanToCloud(plan).catch(() => {});
 }
 
 // Sessions
