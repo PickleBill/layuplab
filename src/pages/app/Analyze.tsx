@@ -257,10 +257,11 @@ const Analyze = () => {
 
   return (
     <div className="p-6 max-w-3xl mx-auto space-y-6">
+      {/* Aspirational Intro */}
       <div>
         <h1 className="font-display font-extrabold text-2xl text-foreground">AI Form Analysis</h1>
         <p className="text-sm text-muted-foreground font-body mt-1">
-          Upload a photo or video clip and get instant AI coaching feedback.
+          The pros film every practice. Upload your clip and let AI break down your mechanics.
         </p>
       </div>
 
