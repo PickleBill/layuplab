@@ -1,17 +1,17 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { getStats, getProfile } from "@/lib/storage";
 import { ALL_ACHIEVEMENTS, getUnlockedAchievements, getLockedAchievements } from "@/lib/achievements";
-import { Trophy, Crown, Activity, Bell } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { Trophy, Crown, Zap, Target } from "lucide-react";
 
-const MOCK_FEED = [
-  { id: '1', avatar: '🏀', name: 'Marcus T.', text: 'Completed a 45-min shooting session — 87 form shots, 23 free throws', time: '2h ago' },
-  { id: '2', avatar: '🔥', name: 'Jaylen R.', text: 'Earned the 🔥 7-Day Streak badge', time: '4h ago' },
-  { id: '3', avatar: '⭐', name: 'Aisha M.', text: 'Unlocked Varsity rank — 2,500 XP', time: '6h ago' },
-  { id: '4', avatar: '💪', name: 'Devon K.', text: 'Crushed 100 defensive slides and 3 sets of suicides', time: '8h ago' },
+const BENCHMARKS = [
+  { name: 'Gym Rat', xp: 10000, emoji: '🐀', title: 'Elite' },
+  { name: 'All-Star Grinder', xp: 5000, emoji: '⭐', title: 'All-Star' },
+  { name: 'Varsity Hustler', xp: 2500, emoji: '🏀', title: 'Varsity' },
+  { name: 'Dedicated Player', xp: 1500, emoji: '💪', title: 'Starter' },
+  { name: 'Average Player', xp: 500, emoji: '🎯', title: 'Rookie' },
+  { name: 'Just Starting', xp: 100, emoji: '👟', title: 'Rookie' },
 ];
 
 const Leaderboard = () => {
@@ -19,112 +19,74 @@ const Leaderboard = () => {
   const profile = getProfile();
   const unlockedAchievements = getUnlockedAchievements(stats.achievements);
   const lockedAchievements = getLockedAchievements(stats.achievements);
-  const [email, setEmail] = useState("");
-  const { toast } = useToast();
 
-  const handleNotify = () => {
-    if (!email.trim()) return;
-    toast({ title: "You're on the list!", description: "We'll notify you when the training feed goes live." });
-    setEmail("");
+  // Build leaderboard: benchmarks + user, sorted by XP desc
+  const userEntry = {
+    name: profile?.username || 'You',
+    xp: stats.xp,
+    emoji: '👤',
+    title: stats.levelTitle,
+    isUser: true,
   };
+
+  const entries = [
+    ...BENCHMARKS.map(b => ({ ...b, isUser: false })),
+    userEntry,
+  ].sort((a, b) => b.xp - a.xp);
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-8">
-      {/* Your Stats */}
+      {/* Leaderboard */}
       <div>
         <div className="flex items-center gap-2 mb-6">
-          <Activity size={22} className="text-primary" />
-          <h1 className="font-display font-extrabold text-2xl text-foreground">Your Training Feed</h1>
+          <Crown size={22} className="text-primary" />
+          <h1 className="font-display font-extrabold text-2xl text-foreground">Leaderboard</h1>
         </div>
 
-        {/* Current User Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="rounded-lg border border-primary/30 bg-primary/5 p-6"
-          style={{ boxShadow: '0 0 20px hsla(var(--primary) / 0.1)' }}
-        >
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-primary/10 border-2 border-primary/30 flex items-center justify-center shrink-0">
-              <Crown size={24} className="text-primary" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-display font-extrabold text-xl text-foreground truncate">
-                {profile?.username || 'Player'}
-              </p>
-              <div className="flex items-center gap-2 mt-1">
-                <Badge variant="outline" className="border-primary/20 text-primary font-display">
-                  {stats.levelTitle}
-                </Badge>
-                <span className="text-sm text-muted-foreground font-body">Level {stats.level}</span>
-              </div>
-            </div>
-            <div className="text-right shrink-0">
-              <p className="font-display font-extrabold text-2xl text-primary">{stats.xp.toLocaleString()}</p>
-              <p className="text-xs text-muted-foreground font-body">Total XP</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-4 mt-6 pt-4 border-t border-primary/10">
-            <div className="text-center">
-              <p className="font-display font-extrabold text-lg text-foreground">🔥 {stats.currentStreak}</p>
-              <p className="text-xs text-muted-foreground font-body">Streak</p>
-            </div>
-            <div className="text-center">
-              <p className="font-display font-extrabold text-lg text-foreground">{stats.totalDrillsCompleted}</p>
-              <p className="text-xs text-muted-foreground font-body">Drills Done</p>
-            </div>
-            <div className="text-center">
-              <p className="font-display font-extrabold text-lg text-foreground">{stats.totalTrainingMinutes}</p>
-              <p className="text-xs text-muted-foreground font-body">Minutes</p>
-            </div>
-          </div>
-        </motion.div>
-      </div>
-
-      {/* Strava-Style Feed Preview */}
-      <div>
-        <p className="text-sm text-muted-foreground font-body mb-4">Preview — what your feed will look like:</p>
-        <div className="space-y-3">
-          {MOCK_FEED.map((item, i) => (
+        <div className="space-y-2">
+          {entries.map((entry, i) => (
             <motion.div
-              key={item.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.08 }}
-              className="rounded-lg border border-border bg-card p-4 flex items-start gap-3"
+              key={entry.name}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.05 }}
+              className={`rounded-lg border p-4 flex items-center gap-3 ${
+                entry.isUser
+                  ? 'border-primary/30 bg-primary/5'
+                  : stats.xp >= entry.xp
+                    ? 'border-accent/20 bg-accent/5'
+                    : 'border-border bg-card'
+              }`}
+              style={entry.isUser ? { boxShadow: '0 0 20px hsla(var(--primary) / 0.1)' } : undefined}
             >
-              <span className="text-2xl">{item.avatar}</span>
+              <span className="w-8 h-8 rounded-full bg-muted flex items-center justify-center font-display font-bold text-sm text-muted-foreground shrink-0">
+                {i + 1}
+              </span>
+              <span className="text-2xl shrink-0">{entry.emoji}</span>
               <div className="flex-1 min-w-0">
-                <p className="font-display font-bold text-sm text-foreground">{item.name}</p>
-                <p className="text-sm text-muted-foreground font-body">{item.text}</p>
+                <p className={`font-display font-bold text-sm ${entry.isUser ? 'text-primary' : 'text-foreground'}`}>
+                  {entry.name} {entry.isUser && '(You)'}
+                </p>
+                <Badge variant="outline" className="text-[10px] font-display mt-0.5">
+                  {entry.title}
+                </Badge>
               </div>
-              <span className="text-xs text-muted-foreground font-body shrink-0">{item.time}</span>
+              <div className="text-right shrink-0">
+                <p className={`font-display font-extrabold text-lg ${entry.isUser ? 'text-primary' : 'text-foreground'}`}>
+                  {entry.xp.toLocaleString()}
+                </p>
+                <p className="text-[10px] text-muted-foreground font-body">XP</p>
+              </div>
+              {!entry.isUser && stats.xp >= entry.xp && (
+                <Zap size={16} className="text-accent shrink-0" />
+              )}
             </motion.div>
           ))}
         </div>
 
-        <div className="mt-6 rounded-lg border border-border bg-card/50 p-6 text-center space-y-4">
-          <Activity size={28} className="mx-auto text-muted-foreground" />
-          <div>
-            <p className="font-display font-bold text-foreground mb-1">Training feed launching soon</p>
-            <p className="text-sm text-muted-foreground font-body max-w-md mx-auto">
-              Your sessions will be public by default — keep yourself accountable. You can make individual sessions private anytime.
-            </p>
-          </div>
-          <div className="flex gap-2 max-w-sm mx-auto">
-            <input
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              placeholder="your@email.com"
-              className="flex-1 h-10 px-3 rounded-md border border-border bg-card text-foreground text-sm font-body placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-            />
-            <Button variant="hero" size="sm" onClick={handleNotify}>
-              <Bell size={14} className="mr-1" /> Notify Me
-            </Button>
-          </div>
-        </div>
+        <p className="text-xs text-muted-foreground font-body text-center mt-4 italic">
+          Climb the ranks by completing drills, workouts, and challenges.
+        </p>
       </div>
 
       {/* Achievement Badges */}

@@ -5,15 +5,20 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Play, Pause, SkipForward, Check, ChevronRight, Lightbulb, ArrowLeft, Video } from "lucide-react";
+import { Play, Pause, SkipForward, Check, ChevronRight, Lightbulb, ArrowLeft, Video, Zap, ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
-import { getPlan, getStats, saveStats, saveSession, updateStreak, addXp, updateSkillRating, addAchievement } from "@/lib/storage";
+import { getPlan, getStats, saveStats, saveSession, updateStreak, addXp, updateSkillRating, addAchievement, completeDrillAction } from "@/lib/storage";
 import { getTodaysPlan } from "@/lib/plan-generator";
 import { getDrillById } from "@/lib/drills";
-import { calculateWorkoutXp } from "@/lib/xp";
+import { calculateWorkoutXp, calculateDrillXp } from "@/lib/xp";
 import { Drill, DrillSession, WorkoutSession } from "@/types/app";
 
 type TrainState = 'overview' | 'countdown' | 'active' | 'rate' | 'summary';
+
+function getYouTubeId(url: string): string | null {
+  const match = url.match(/(?:v=|\/)([\w-]{11})/);
+  return match ? match[1] : null;
+}
 
 const Train = () => {
   const navigate = useNavigate();
@@ -29,6 +34,7 @@ const Train = () => {
   const [completedDrills, setCompletedDrills] = useState<DrillSession[]>([]);
   const [showTip, setShowTip] = useState(false);
   const [videoDrill, setVideoDrill] = useState<Drill | null>(null);
+  const [sessionXp, setSessionXp] = useState(0);
 
   const currentDrill = drills[currentDrillIndex];
   const drillProgress = currentDrill ? Math.min((elapsed / currentDrill.duration) * 100, 100) : 0;
@@ -62,8 +68,26 @@ const Train = () => {
 
   const completeDrill = () => setState('rate');
 
+  const goBack = () => {
+    if (state === 'rate') {
+      setState('active');
+      return;
+    }
+    if (currentDrillIndex > 0) {
+      setCurrentDrillIndex(i => i - 1);
+      setState('overview');
+    }
+  };
+
   const rateDrill = (rating: 'easy' | 'good' | 'hard') => {
     if (!currentDrill) return;
+
+    // Use unified completion
+    const { xpEarned } = completeDrillAction(currentDrill.id, elapsed, currentDrill.category, rating);
+    setSessionXp(prev => prev + xpEarned);
+
+    toast(`+${xpEarned} XP ⚡`, { description: currentDrill.name });
+
     const session: DrillSession = {
       drillId: currentDrill.id,
       completedAt: new Date().toISOString(),
@@ -72,15 +96,11 @@ const Train = () => {
     };
     setCompletedDrills(prev => [...prev, session]);
 
-    // Adjust skill rating
-    const delta = rating === 'easy' ? 3 : rating === 'good' ? 1 : -1;
-    updateSkillRating(currentDrill.category, delta);
-
     if (currentDrillIndex < drills.length - 1) {
       setCurrentDrillIndex(i => i + 1);
       startDrill();
     } else {
-      finishWorkout([...completedDrills, session]);
+      setState('summary');
     }
   };
 
@@ -89,45 +109,9 @@ const Train = () => {
       setCurrentDrillIndex(i => i + 1);
       startDrill();
     } else {
-      finishWorkout(completedDrills);
+      setState('summary');
     }
   };
-
-  const finishWorkout = useCallback((sessions: DrillSession[]) => {
-    const stats = getStats();
-    const xpEarned = calculateWorkoutXp(sessions.length, stats.currentStreak);
-    const totalMin = Math.round(sessions.reduce((s, d) => s + d.duration, 0) / 60);
-
-    addXp(xpEarned);
-    updateStreak();
-
-    const updatedStats = getStats();
-    updatedStats.totalDrillsCompleted += sessions.length;
-    updatedStats.totalTrainingMinutes += totalMin;
-    saveStats(updatedStats);
-
-    // Check achievements
-    if (updatedStats.totalDrillsCompleted >= 1 && !updatedStats.achievements.includes('first_workout')) {
-      addAchievement('first_workout');
-    }
-    if (updatedStats.totalDrillsCompleted >= 100 && !updatedStats.achievements.includes('drills_100')) {
-      addAchievement('drills_100');
-    }
-    if (updatedStats.currentStreak >= 7 && !updatedStats.achievements.includes('streak_7')) {
-      addAchievement('streak_7');
-    }
-
-    const workout: WorkoutSession = {
-      id: crypto.randomUUID(),
-      date: new Date().toISOString(),
-      drills: sessions,
-      totalXpEarned: xpEarned,
-      completed: true,
-    };
-    saveSession(workout);
-
-    setState('summary');
-  }, []);
 
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
 
@@ -178,6 +162,17 @@ const Train = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Running XP Counter */}
+      {(state === 'active' || state === 'rate' || state === 'countdown') && sessionXp > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="fixed top-2 right-4 z-40 bg-primary/90 text-primary-foreground px-3 py-1 rounded-full flex items-center gap-1 text-sm font-display font-bold shadow-lg"
+        >
+          <Zap size={14} /> {sessionXp} XP
+        </motion.div>
+      )}
+
       <AnimatePresence mode="wait">
         {/* OVERVIEW */}
         {state === 'overview' && (
@@ -187,36 +182,44 @@ const Train = () => {
                 <ArrowLeft size={18} />
               </Button>
               <h1 className="font-display font-extrabold text-2xl text-foreground">Today's Drills</h1>
+              {sessionXp > 0 && (
+                <Badge className="ml-auto bg-primary/20 text-primary font-display gap-1">
+                  <Zap size={12} /> {sessionXp} XP
+                </Badge>
+              )}
             </div>
             <div className="space-y-3">
-              {drills.map((drill, i) => (
-                <div key={drill.id} className="flex items-center gap-3 p-4 rounded-lg border border-border bg-card">
-                  <span className="w-8 h-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center font-display font-bold text-sm text-primary">
-                    {i + 1}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-body font-medium text-foreground">{drill.name}</p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <Badge variant="secondary" className="text-[10px] uppercase font-display">{drill.category}</Badge>
-                      <span className="text-xs text-muted-foreground font-body">{Math.round(drill.duration / 60)} min</span>
-                      <span className="text-xs text-muted-foreground">{'●'.repeat(drill.difficulty)}{'○'.repeat(3 - drill.difficulty)}</span>
+              {drills.map((drill, i) => {
+                const videoId = drill.videoUrl ? getYouTubeId(drill.videoUrl) : null;
+                const isDone = completedDrills.some(d => d.drillId === drill.id);
+                return (
+                  <div key={drill.id} className={`flex items-center gap-3 p-4 rounded-lg border bg-card ${isDone ? 'border-accent/40 bg-accent/5' : 'border-border'}`}>
+                    {videoId ? (
+                      <button onClick={() => setVideoDrill(drill)} className="relative w-16 h-12 rounded overflow-hidden shrink-0 group">
+                        <img src={`https://img.youtube.com/vi/${videoId}/mqdefault.jpg`} alt="" className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                          <Play size={12} className="text-white" />
+                        </div>
+                      </button>
+                    ) : (
+                      <span className="w-8 h-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center font-display font-bold text-sm text-primary shrink-0">
+                        {i + 1}
+                      </span>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-body font-medium text-foreground">{drill.name}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <Badge variant="secondary" className="text-[10px] uppercase font-display">{drill.category}</Badge>
+                        <span className="text-xs text-muted-foreground font-body">{Math.round(drill.duration / 60)} min</span>
+                      </div>
                     </div>
+                    {isDone && <Check size={16} className="text-accent shrink-0" />}
                   </div>
-                  {drill.videoUrl && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="shrink-0 gap-1 text-xs text-primary hover:text-primary"
-                      onClick={() => setVideoDrill(drill)}
-                    >
-                      <Video size={14} /> Demo
-                    </Button>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
             <Button variant="hero" className="w-full mt-6" onClick={startDrill}>
-              Start Workout <ChevronRight size={16} />
+              {completedDrills.length > 0 ? 'Continue Workout' : 'Start Workout'} <ChevronRight size={16} />
             </Button>
           </motion.div>
         )}
@@ -281,7 +284,12 @@ const Train = () => {
             </AnimatePresence>
 
             {/* Controls */}
-            <div className="flex justify-center gap-4">
+            <div className="flex justify-center gap-3 flex-wrap">
+              {currentDrillIndex > 0 && (
+                <Button variant="outline" size="icon" onClick={goBack} title="Previous drill">
+                  <ChevronLeft size={18} />
+                </Button>
+              )}
               {currentDrill.videoUrl && (
                 <Button variant="outline" size="icon" onClick={() => { setIsPaused(true); setVideoDrill(currentDrill); }}>
                   <Video size={18} />
@@ -308,7 +316,7 @@ const Train = () => {
           <motion.div key="rate" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="text-center py-12">
             <h2 className="font-display font-bold text-xl text-foreground mb-2">How was that?</h2>
             <p className="text-muted-foreground font-body mb-8">{currentDrill.name} — {formatTime(elapsed)}</p>
-            <div className="flex justify-center gap-4">
+            <div className="flex justify-center gap-4 mb-6">
               {[
                 { value: 'easy' as const, label: 'Too Easy', emoji: '😎' },
                 { value: 'good' as const, label: 'Just Right', emoji: '💪' },
@@ -324,6 +332,9 @@ const Train = () => {
                 </button>
               ))}
             </div>
+            <Button variant="ghost" size="sm" className="text-xs text-muted-foreground gap-1" onClick={goBack}>
+              <ChevronLeft size={12} /> Go Back
+            </Button>
           </motion.div>
         )}
 
@@ -344,10 +355,15 @@ const Train = () => {
                 <p className="text-xs text-muted-foreground font-body">Time</p>
               </div>
               <div>
-                <p className="font-display font-extrabold text-2xl text-primary">
-                  +{calculateWorkoutXp(completedDrills.length, getStats().currentStreak)}
-                </p>
-                <p className="text-xs text-muted-foreground font-body">XP</p>
+                <motion.p
+                  className="font-display font-extrabold text-2xl text-primary"
+                  initial={{ scale: 0.5 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: "spring", damping: 10 }}
+                >
+                  +{sessionXp}
+                </motion.p>
+                <p className="text-xs text-muted-foreground font-body">XP Earned</p>
               </div>
             </div>
 

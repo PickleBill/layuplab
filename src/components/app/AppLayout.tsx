@@ -1,7 +1,8 @@
 import { Outlet, useNavigate } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { LayoutDashboard, Dumbbell, BookOpen, Calendar, BarChart3, Video, Trophy, Users, MessageCircle, X, Send } from "lucide-react";
+import { LayoutDashboard, Dumbbell, BookOpen, Calendar, BarChart3, Video, Trophy, Users, MessageCircle, X, Send, LogOut } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import XpBar from "@/components/app/XpBar";
 import { NavLink } from "@/components/NavLink";
 import { Button } from "@/components/ui/button";
@@ -212,8 +213,15 @@ const AppLayout = () => {
               </NavLink>
             ))}
           </nav>
-          <div className="p-4 border-t border-border">
+        <div className="p-4 border-t border-border flex items-center justify-between">
             <p className="text-xs text-muted-foreground font-body">LayupLab v2.0</p>
+            <button
+              onClick={async () => { await supabase.auth.signOut(); navigate("/auth"); }}
+              className="text-muted-foreground hover:text-foreground transition-colors"
+              title="Sign out"
+            >
+              <LogOut size={14} />
+            </button>
           </div>
         </aside>
       )}

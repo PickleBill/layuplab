@@ -1,5 +1,5 @@
-import { PlayerProfile, PlayerStats, WeeklyPlan, WorkoutSession, DailyChallenge, DrillCategory, LevelTitle, AnalysisRecord, CoachStyle } from '@/types/app';
-import { getLevelFromXp, getLevelTitle } from './xp';
+import { PlayerProfile, PlayerStats, WeeklyPlan, WorkoutSession, DailyChallenge, DrillCategory, LevelTitle, AnalysisRecord, CoachStyle, DrillSession } from '@/types/app';
+import { getLevelFromXp, getLevelTitle, calculateDrillXp } from './xp';
 
 const KEYS = {
   profile: 'layuplab_profile',
@@ -8,6 +8,8 @@ const KEYS = {
   sessions: 'layuplab_sessions',
   challenges: 'layuplab_challenges',
   analysisHistory: 'layuplab_analysis_history',
+  favorites: 'layuplab_favorites',
+  completedToday: 'layuplab_completed_today',
 } as const;
 
 function get<T>(key: string): T | null {
@@ -94,6 +96,130 @@ export function addAchievement(id: string): PlayerStats {
     saveStats(stats);
   }
   return stats;
+}
+
+// Unified Drill Completion — used by Train, DrillLibrary, Challenges
+export function completeDrillAction(drillId: string, durationSeconds: number, category: DrillCategory, rating?: 'easy' | 'good' | 'hard'): { xpEarned: number; stats: PlayerStats } {
+  const stats = getStats();
+  const xpEarned = calculateDrillXp(stats.currentStreak);
+
+  // Add XP
+  stats.xp += xpEarned;
+  stats.level = getLevelFromXp(stats.xp);
+  stats.levelTitle = getLevelTitle(stats.level);
+
+  // Update stats
+  stats.totalDrillsCompleted += 1;
+  stats.totalTrainingMinutes += Math.max(1, Math.round(durationSeconds / 60));
+
+  // Skill rating adjustment
+  if (rating) {
+    const delta = rating === 'easy' ? 3 : rating === 'good' ? 1 : -1;
+    stats.skillRatings[category] = Math.min(100, Math.max(0, stats.skillRatings[category] + delta));
+  }
+
+  // Update streak
+  const today = new Date().toISOString().split('T')[0];
+  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+  if (stats.lastWorkoutDate !== today) {
+    if (stats.lastWorkoutDate === yesterday) {
+      stats.currentStreak += 1;
+    } else {
+      stats.currentStreak = 1;
+    }
+    stats.longestStreak = Math.max(stats.longestStreak, stats.currentStreak);
+    stats.lastWorkoutDate = today;
+  }
+
+  saveStats(stats);
+
+  // Save drill session
+  const session: DrillSession = {
+    drillId,
+    completedAt: new Date().toISOString(),
+    rating: rating || 'good',
+    duration: durationSeconds,
+  };
+  const sessions = getSessions();
+  // Find or create today's workout session
+  const todaySession = sessions.find(s => s.date.startsWith(today));
+  if (todaySession) {
+    todaySession.drills.push(session);
+    todaySession.totalXpEarned += xpEarned;
+    set(KEYS.sessions, sessions);
+  } else {
+    const workout: WorkoutSession = {
+      id: crypto.randomUUID(),
+      date: new Date().toISOString(),
+      drills: [session],
+      totalXpEarned: xpEarned,
+      completed: false,
+    };
+    sessions.push(workout);
+    set(KEYS.sessions, sessions);
+  }
+
+  // Check achievements
+  if (stats.totalDrillsCompleted >= 1 && !stats.achievements.includes('first_workout')) {
+    addAchievement('first_workout');
+  }
+  if (stats.totalDrillsCompleted >= 10 && !stats.achievements.includes('drills_10')) {
+    addAchievement('drills_10');
+  }
+  if (stats.totalDrillsCompleted >= 50 && !stats.achievements.includes('drills_50')) {
+    addAchievement('drills_50');
+  }
+  if (stats.totalDrillsCompleted >= 100 && !stats.achievements.includes('drills_100')) {
+    addAchievement('drills_100');
+  }
+  if (stats.currentStreak >= 7 && !stats.achievements.includes('streak_7')) {
+    addAchievement('streak_7');
+  }
+  if (stats.totalTrainingMinutes >= 60 && !stats.achievements.includes('minutes_60')) {
+    addAchievement('minutes_60');
+  }
+  if (stats.totalTrainingMinutes >= 300 && !stats.achievements.includes('minutes_300')) {
+    addAchievement('minutes_300');
+  }
+
+  // Track completed today
+  markCompletedToday(drillId);
+
+  return { xpEarned, stats: getStats() };
+}
+
+// Favorites
+export function getFavorites(): string[] {
+  return get<string[]>(KEYS.favorites) || [];
+}
+
+export function toggleFavorite(drillId: string): string[] {
+  const favs = getFavorites();
+  const idx = favs.indexOf(drillId);
+  if (idx >= 0) {
+    favs.splice(idx, 1);
+  } else {
+    favs.push(drillId);
+  }
+  set(KEYS.favorites, favs);
+  return favs;
+}
+
+// Completed Today
+export function getCompletedToday(): string[] {
+  const data = get<{ date: string; ids: string[] }>(KEYS.completedToday);
+  const today = new Date().toISOString().split('T')[0];
+  if (data?.date === today) return data.ids;
+  return [];
+}
+
+function markCompletedToday(drillId: string): void {
+  const today = new Date().toISOString().split('T')[0];
+  const ids = getCompletedToday();
+  if (!ids.includes(drillId)) {
+    ids.push(drillId);
+  }
+  set(KEYS.completedToday, { date: today, ids });
 }
 
 // Plan
