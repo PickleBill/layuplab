@@ -1,47 +1,86 @@
 
 
-## Plan: Enhanced Onboarding + Guided First-Time Experience
+## Plan: Dynamic, Action-Driven Layup Lab Experience
 
-### Problem
-Onboarding is too bare (just name + commitment), the AI coach auto-opens and overlays the dashboard immediately, and new users face 8 nav tabs with no guidance.
+This plan addresses: compact onboarding with a sliding time commitment, weekly plan on the dashboard, persistent XP bar, always-visible CTAs, and action-oriented flow throughout.
 
-### Changes
+---
 
-#### 1. Expand Onboarding with Optional Detail Panel (`src/pages/Onboarding.tsx`)
+### 1. Onboarding — Compact & Dynamic (`src/pages/Onboarding.tsx`)
 
-Keep the current name + commitment as the top section. Below it, add a collapsible/expandable "Customize your plan" panel with:
+Shrink the entire onboarding to feel tighter:
+- **Name input** — smaller, inline at top
+- **Commitment cards** — compact (smaller padding, side-by-side on wider screens)
+- When user selects a commitment level, **auto-expand** the customize panel (instead of requiring a click) with the session-length selector pre-focused
+- **Session length** — replace 3 buttons with a **Slider** component (from `@/components/ui/slider.tsx`). Range 15–90 min, snapping to 15-min increments. Add playful labels: "Quick session" at 15, "Pro grind" at 60, "Mamba hours" at 90. The slider thumb and value update live
+- Keep goals and training days as-is inside the panel
+- "Let's Go" button always visible, no scroll needed on mobile
 
-- **Session length** — 3 toggle buttons: 30 / 45 / 60 min (default 45)
-- **What to focus on** — Goal chips (Shooting, Ball Handling, Speed & Agility, Conditioning) as multi-select toggles, with "Overall" as default if none selected
-- **Training days** — 7 day-of-week toggle buttons (default all selected)
+### 2. Weekly Plan on Dashboard (`src/pages/app/Dashboard.tsx`)
 
-The panel has a subtle header like "Optional — customize your training" with a chevron to expand/collapse. Collapsed by default so users can skip it entirely.
+Add a **collapsible weekly plan** section between the stats row and today's workout:
+- Shows all 7 days in a compact horizontal row (day abbreviation + training/rest indicator)
+- Today is highlighted with primary color
+- Tapping a day expands to show that day's drills inline
+- Starts expanded on today's day
+- "View Full Plan" link to `/app/plan`
 
-The "Let's Go" button stays always visible below everything. Whether they customize or not, it works — defaults are already sensible.
+### 3. Persistent XP Bar in App Layout (`src/components/app/AppLayout.tsx`)
 
-#### 2. Stop Auto-Opening Coach Chat (`src/components/app/AppLayout.tsx`)
+Add a thin **sticky XP progress bar** at the very top of the main content area (below header on desktop, above bottom nav on mobile):
+- Shows current level, XP fraction, and a thin progress bar
+- Animates when XP changes (via polling localStorage or a simple interval)
+- Streak flame icon if streak > 0
+- Compact: ~32px tall, subtle but always visible
 
-Remove the `useEffect` that auto-opens the chat and fires a greeting when `!hasDetailedProfile()`. The coach button stays floating — users open it when ready.
+### 4. Dashboard Always Has Actions (`src/pages/app/Dashboard.tsx`)
 
-#### 3. Add First-Time Guided Welcome to Dashboard (`src/pages/app/Dashboard.tsx`)
+Restructure the dashboard to always surface a primary CTA:
+- **If workout not done today**: "Start Today's Workout" hero button (already exists, keep prominent)
+- **If workout done today**: Replace with "Great work! 🏀" card + secondary CTAs: "Analyze Your Form", "Browse Drills", "Chat with Coach"
+- **Rest day**: Replace with "Rest day — but pros still do form shooting" + a CTA: "Do a Quick Form Shooting Session" that navigates to train with just the form shooting drill
+- **Coach tip** — add a small "Practice form shooting →" CTA link at the bottom of every coach tip
+- Remove the dismiss-forever welcome guide. Instead, keep a **"What's Next"** section that rotates suggestions based on stats (e.g., "You haven't analyzed your form yet → Try AI Analysis", "Your shooting skill is lowest → Focus on shooting drills")
 
-When `!hasDetailedProfile()` (user skipped customization) OR on first visit (detect via a `layuplab_welcomed` localStorage flag), show a **welcome overlay/banner** at the top of the dashboard:
+### 5. Action-Oriented Train Summary (`src/pages/app/Train.tsx`)
 
-- **Welcome card** with the user's name: "Welcome to the court, [Name]! Here's how to get started:"
-- **3 guided action cards** in a horizontal scroll/grid:
-  1. 🏀 **"Start Today's Workout"** — "Your first session is ready. Tap to begin." → navigates to `/app/train`
-  2. 📚 **"Browse the Drill Library"** — "Explore 50+ drills with video demos." → navigates to `/app/drills`
-  3. 💬 **"Talk to Your Coach"** — "Ask Kobe, LeBron, or Curry anything." → opens the coach chat
-- A small "Dismiss" link that sets `layuplab_welcomed = true` and hides the card permanently
+After workout completion (summary screen):
+- Add "Share Your Progress" button (mock — toast "Coming soon!")
+- Add "Analyze Your Form" CTA linking to `/app/analyze`
+- Show XP earned with an animated counter
+- "Back to basics" nudge: "Pros practice form shooting every day. Keep it up!"
 
-This guides without blocking — it's a prominent but dismissable section at the top of the dashboard.
+### 6. Form Shooting Easter Eggs & Nudges (across files)
 
-#### 4. Files Modified
+Sprinkle "back to basics" reminders:
+- **Coach chat**: Update the edge function system prompt to occasionally remind players about form shooting fundamentals
+- **Challenges page**: Add a daily "Form Shooting Challenge" that's always available (10 min form shooting = bonus XP)
+- **Analyze page**: After analysis results, add a nudge: "Want to improve? Start with form shooting basics →"
 
-| File | Change |
-|------|--------|
-| `src/pages/Onboarding.tsx` | Add collapsible customization panel (session length, goals, training days) |
-| `src/components/app/AppLayout.tsx` | Remove auto-open chat `useEffect` |
-| `src/pages/app/Dashboard.tsx` | Add first-time welcome guide with 3 action cards |
-| `src/lib/storage.ts` | Add `hasBeenWelcomed()` / `setWelcomed()` helpers |
+### 7. Video Analysis CTA Enhancement (`src/pages/app/Analyze.tsx`)
+
+Add an aspirational intro section:
+- "The pros film every practice. Upload your clip and let AI break down your mechanics."
+- After results, add coach-style encouragement: "You're already ahead of 90% of players by analyzing your form. Keep pushing!"
+- Add a "Chat with your coach about these results" button that opens the coach chat with the analysis summary pre-filled
+
+---
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `src/pages/Onboarding.tsx` | Slider for session length, auto-expand on commitment select, compact layout |
+| `src/pages/app/Dashboard.tsx` | Inline weekly plan, context-aware CTAs, "What's Next" section, rest-day form shooting CTA |
+| `src/components/app/AppLayout.tsx` | Persistent XP bar at top of content area |
+| `src/pages/app/Train.tsx` | Enhanced summary with analyze CTA and basics nudge |
+| `src/pages/app/Analyze.tsx` | Aspirational copy, post-analysis coach chat CTA |
+| `src/pages/app/Challenges.tsx` | Always-available form shooting challenge |
+| `supabase/functions/coach-chat/index.ts` | Add form shooting emphasis to system prompts |
+
+### Future AI/Edge Enhancements to Consider
+- **AI Drill Recommender**: Edge function that analyzes workout history and suggests personalized drill adjustments weekly
+- **AI Motivation Engine**: Daily push-style notification content generated by the coach persona, delivered via the dashboard
+- **Voice Coach Mode**: Real-time audio coaching during drills using text-to-speech from the AI coach
+- **Peer Comparison AI**: Anonymous aggregate stats — "You're in the top 30% for shooting consistency this week"
 
