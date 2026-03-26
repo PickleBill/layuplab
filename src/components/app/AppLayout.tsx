@@ -213,8 +213,15 @@ const AppLayout = () => {
               </NavLink>
             ))}
           </nav>
-          <div className="p-4 border-t border-border">
+        <div className="p-4 border-t border-border flex items-center justify-between">
             <p className="text-xs text-muted-foreground font-body">LayupLab v2.0</p>
+            <button
+              onClick={async () => { await supabase.auth.signOut(); navigate("/auth"); }}
+              className="text-muted-foreground hover:text-foreground transition-colors"
+              title="Sign out"
+            >
+              <LogOut size={14} />
+            </button>
           </div>
         </aside>
       )}

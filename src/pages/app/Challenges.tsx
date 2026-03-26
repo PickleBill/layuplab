@@ -13,7 +13,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { getChallenges, saveChallenges, getStats, addXp } from "@/lib/storage";
+import { getChallenges, saveChallenges, getStats, addXp, completeDrillAction } from "@/lib/storage";
 import { DailyChallenge, DrillCategory } from "@/types/app";
 import { XP_PER_CHALLENGE } from "@/lib/xp";
 
