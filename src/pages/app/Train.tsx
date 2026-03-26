@@ -331,7 +331,7 @@ const Train = () => {
           <motion.div key="summary" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-12">
             <p className="text-6xl mb-4">🎉</p>
             <h2 className="font-display font-extrabold text-3xl text-foreground mb-2">Workout Complete!</h2>
-            <div className="flex justify-center gap-6 mt-6 mb-8">
+            <div className="flex justify-center gap-6 mt-6 mb-6">
               <div>
                 <p className="font-display font-extrabold text-2xl text-primary">{completedDrills.length}</p>
                 <p className="text-xs text-muted-foreground font-body">Drills</p>
@@ -349,9 +349,28 @@ const Train = () => {
                 <p className="text-xs text-muted-foreground font-body">XP</p>
               </div>
             </div>
-            <Button variant="hero" onClick={() => navigate("/app/dashboard")}>
-              Back to Dashboard
-            </Button>
+
+            <p className="text-xs text-muted-foreground font-body italic mb-6">
+              🎯 Pros practice form shooting every day. Keep it up!
+            </p>
+
+            <div className="space-y-2">
+              <Button variant="hero" className="w-full" onClick={() => navigate("/app/dashboard")}>
+                Back to Dashboard
+              </Button>
+              <Button variant="outline" className="w-full gap-1" onClick={() => navigate("/app/analyze")}>
+                <Video size={14} /> Analyze Your Form
+              </Button>
+              <Button
+                variant="ghost"
+                className="w-full text-xs text-muted-foreground"
+                onClick={() => {
+                  toast("Coming soon! 🏀", { description: "Share your progress with friends." });
+                }}
+              >
+                Share Your Progress 📤
+              </Button>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
