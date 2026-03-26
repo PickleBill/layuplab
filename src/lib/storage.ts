@@ -1,5 +1,6 @@
 import { PlayerProfile, PlayerStats, WeeklyPlan, WorkoutSession, DailyChallenge, DrillCategory, LevelTitle, AnalysisRecord, CoachStyle, DrillSession } from '@/types/app';
 import { getLevelFromXp, getLevelTitle, calculateDrillXp } from './xp';
+import { syncProfileToCloud, syncStatsToCloud, syncFavoritesToCloud, syncSessionToCloud, syncPlanToCloud } from './cloud-sync';
 
 const KEYS = {
   profile: 'layuplab_profile',
