@@ -7,6 +7,7 @@ import XpBar from "@/components/app/XpBar";
 import { NavLink } from "@/components/NavLink";
 import { Button } from "@/components/ui/button";
 import { getCoachStyle, getProfile, hasDetailedProfile, saveProfile, savePlan } from "@/lib/storage";
+import { pushLocalDataToCloud, pullCloudDataToLocal } from "@/lib/cloud-sync";
 import { generateWeeklyPlan } from "@/lib/plan-generator";
 import { useToast } from "@/hooks/use-toast";
 import { CoachStyle, Goal, Equipment, DayOfWeek } from "@/types/app";
