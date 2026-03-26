@@ -45,13 +45,26 @@ const AppLayout = () => {
   const [activeCoach, setActiveCoach] = useState<CoachStyle>(getCoachStyle());
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
-  const hasAutoOpened = useRef(false);
+  const hasSynced = useRef(false);
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, chatOpen]);
+
+  // Sync data with cloud on mount (once)
+  useEffect(() => {
+    if (hasSynced.current) return;
+    hasSynced.current = true;
+    
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        // Push local data to cloud, then pull cloud data to local (cloud wins for conflicts)
+        pushLocalDataToCloud().then(() => pullCloudDataToLocal()).catch(console.error);
+      }
+    });
+  }, []);
 
   // Coach chat is available via the floating button — no auto-open
 
