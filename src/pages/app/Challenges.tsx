@@ -18,6 +18,7 @@ import { DailyChallenge, DrillCategory } from "@/types/app";
 import { XP_PER_CHALLENGE } from "@/lib/xp";
 
 const CHALLENGE_TEMPLATES = [
+  { title: 'Form Shooting Focus', description: 'Complete 10 minutes of form shooting', category: 'shooting' as DrillCategory, target: 10, isDaily: true },
   { title: 'Sharp Shooter', description: 'Complete 50 form shots', category: 'shooting' as DrillCategory, target: 50 },
   { title: 'Handle Master', description: 'Do 5 minutes of stationary dribbling', category: 'dribbling' as DrillCategory, target: 300 },
   { title: 'Quick Feet', description: 'Complete 100 defensive slides', category: 'footwork' as DrillCategory, target: 100 },
