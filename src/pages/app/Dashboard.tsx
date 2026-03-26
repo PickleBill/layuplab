@@ -77,7 +77,7 @@ const Dashboard = () => {
 
   // Coach tip
   const coachStyle = getCoachStyle();
-  const tips = COACH_TIPS[coachStyle];
+  const tips = COACH_TIPS[coachStyle] || COACH_TIPS['kobe'];
   const tipIndex = Math.floor(Date.now() / 86400000) % tips.length; // rotates daily
 
   return (
