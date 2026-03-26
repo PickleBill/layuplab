@@ -1,15 +1,22 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Flame, Dumbbell, Clock, Trophy, ChevronRight, MessageSquare, BookOpen, MessageCircle, X } from "lucide-react";
+import { Flame, Dumbbell, Clock, Trophy, ChevronRight, ChevronDown, ChevronUp, MessageSquare, BookOpen, MessageCircle, Video, Target, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { getProfile, getStats, getPlan, getSessions, getCoachStyle, hasBeenWelcomed, setWelcomed } from "@/lib/storage";
+import { getProfile, getStats, getPlan, getSessions, getCoachStyle, hasBeenWelcomed, setWelcomed, getAnalysisHistory } from "@/lib/storage";
 import { getXpProgress, getXpForCurrentLevel, XP_PER_LEVEL } from "@/lib/xp";
 import { getTodaysPlan } from "@/lib/plan-generator";
 import { getDrillById } from "@/lib/drills";
-import { CoachStyle } from "@/types/app";
+import { CoachStyle, DayOfWeek } from "@/types/app";
+
+const DAY_LABELS: Record<DayOfWeek, string> = {
+  monday: 'Mon', tuesday: 'Tue', wednesday: 'Wed', thursday: 'Thu',
+  friday: 'Fri', saturday: 'Sat', sunday: 'Sun',
+};
+
+const ALL_DAYS: DayOfWeek[] = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
 const ACHIEVEMENTS_MAP: Record<string, { title: string; icon: string }> = {
   first_workout: { title: 'First Workout', icon: '🏀' },
@@ -22,32 +29,27 @@ const COACH_TIPS: Record<CoachStyle, string[]> = {
   kobe: [
     "No excuses today. Get to the court and put in the work. Form shooting first — always.",
     "You think one workout is enough? Do it again. Mamba Mentality.",
-    "I used to start at 4am. What time are you starting?",
     "Discipline beats motivation every single day. Show up.",
   ],
   lebron: [
-    "Every rep counts! Even 10 minutes of form shooting today puts you ahead of yesterday. 🏀",
+    "Every rep counts! Even 10 minutes of form shooting today puts you ahead. 🏀",
     "Build your game systematically. What's your weakest link today?",
-    "Small wins stack up. Trust the process and watch yourself level up.",
-    "Recovery is just as important as the grind. Take care of your body.",
+    "Small wins stack up. Trust the process.",
   ],
   curry: [
     "Shooting is an art — let's find your rhythm today! 🎯",
     "Remember: I started with form shots too. Keep going!",
     "Have fun out there. The best players love the work.",
-    "One more rep. One more shot. That's how you change the game.",
   ],
   sir_charles: [
     "That jumper is turrible. Let me fix it. Get to the court!",
-    "I was the Round Mound of Rebound and I still outworked everyone. Your turn.",
-    "Stop making excuses. Even I made the Hall of Fame without a ring. Effort matters!",
+    "Stop making excuses. Effort matters!",
     "You know what's turrible? Not practicing. Get out there!",
   ],
   phil: [
     "Focus on your breathing before each shot. The mind leads the body.",
     "Basketball is a dance, not a fight. Find your flow today.",
-    "The strength of your game is built in moments of stillness. Practice with intention.",
-    "Footwork tip: Your pivot foot placement determines your entire shot mechanics. Start there.",
+    "Practice with intention. The strength of your game is built in stillness.",
   ],
 };
 
@@ -58,67 +60,81 @@ const Dashboard = () => {
   const plan = getPlan();
   const todayPlan = plan ? getTodaysPlan(plan) : null;
   const [showWelcome, setShowWelcome] = useState(!hasBeenWelcomed());
+  const todayDayIndex = (new Date().getDay() + 6) % 7;
+  const [expandedDay, setExpandedDay] = useState<number>(todayDayIndex);
+  const [weekPlanOpen, setWeekPlanOpen] = useState(true);
 
   if (!profile) {
     navigate("/onboarding");
     return null;
   }
 
-  const dismissWelcome = () => {
-    setWelcomed();
-    setShowWelcome(false);
-  };
+  const dismissWelcome = () => { setWelcomed(); setShowWelcome(false); };
 
   const xpProgress = getXpProgress(stats.xp) * 100;
   const xpCurrent = getXpForCurrentLevel(stats.xp);
   const todayDrills = todayPlan?.drills.map(id => getDrillById(id)).filter(Boolean) || [];
   const totalTodayMin = Math.round(todayDrills.reduce((sum, d) => sum + (d?.duration || 0), 0) / 60);
 
-  // Weekly progress — real calculation
-  const trainingDays = plan?.days.filter(d => !d.isRestDay).length || 0;
   const sessions = getSessions();
   const weekStart = new Date();
   weekStart.setDate(weekStart.getDate() - weekStart.getDay());
   weekStart.setHours(0, 0, 0, 0);
+  const todayStr = new Date().toISOString().split('T')[0];
+  const completedToday = sessions.some(s => s.date.startsWith(todayStr));
+  const trainingDays = plan?.days.filter(d => !d.isRestDay).length || 0;
   const completedDays = sessions.filter(s => new Date(s.date) >= weekStart).length;
 
-  // Coach tip
   const coachStyle = getCoachStyle();
   const tips = COACH_TIPS[coachStyle] || COACH_TIPS['kobe'];
-  const tipIndex = Math.floor(Date.now() / 86400000) % tips.length; // rotates daily
+  const tipIndex = Math.floor(Date.now() / 86400000) % tips.length;
+
+  const analysisCount = getAnalysisHistory().length;
+
+  // What's Next suggestions
+  const suggestions: { emoji: string; text: string; action: () => void }[] = [];
+  if (!completedToday && !todayPlan?.isRestDay) {
+    suggestions.push({ emoji: '🏀', text: "Start today's workout", action: () => navigate("/app/train") });
+  }
+  if (analysisCount === 0) {
+    suggestions.push({ emoji: '📹', text: "Try AI form analysis — film yourself shooting", action: () => navigate("/app/analyze") });
+  }
+  if (stats.totalDrillsCompleted < 5) {
+    suggestions.push({ emoji: '📚', text: "Explore the drill library", action: () => navigate("/app/drills") });
+  }
+  suggestions.push({ emoji: '🎯', text: "Practice form shooting → all pros do it daily", action: () => navigate("/app/train") });
 
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-6">
+    <div className="p-4 sm:p-6 max-w-4xl mx-auto space-y-4">
+      {/* Player Card — compact */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-        {/* Player Card */}
-        <div className="relative rounded-lg border border-border bg-card p-6 glow-orange-border overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2" />
-          <div className="relative flex items-center gap-5">
-            <div className="w-16 h-16 rounded-full bg-primary/20 border-2 border-primary flex items-center justify-center">
-              <span className="font-display font-extrabold text-xl text-primary">
+        <div className="relative rounded-lg border border-border bg-card p-4 glow-orange-border overflow-hidden">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+          <div className="relative flex items-center gap-4">
+            <div className="w-12 h-12 rounded-full bg-primary/20 border-2 border-primary flex items-center justify-center shrink-0">
+              <span className="font-display font-extrabold text-base text-primary">
                 {profile.username.slice(0, 2).toUpperCase()}
               </span>
             </div>
-            <div className="flex-1">
-              <h1 className="font-display font-extrabold text-2xl text-foreground">{profile.username}</h1>
-              <div className="flex items-center gap-3 mt-1">
-                <Badge variant="outline" className="border-primary/30 text-primary font-display text-xs">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <h1 className="font-display font-extrabold text-lg text-foreground truncate">{profile.username}</h1>
+                <Badge variant="outline" className="border-primary/30 text-primary font-display text-[10px] shrink-0">
                   {stats.levelTitle}
                 </Badge>
-                <span className="text-sm text-muted-foreground font-body">Level {stats.level}</span>
                 {stats.currentStreak > 0 && (
-                  <span className="flex items-center gap-1 text-sm font-body">
-                    <Flame size={14} className="text-primary" />
-                    <span className="text-primary font-bold">{stats.currentStreak}</span>
+                  <span className="flex items-center gap-0.5 text-xs shrink-0">
+                    <Flame size={12} className="text-primary" />
+                    <span className="text-primary font-bold font-display">{stats.currentStreak}</span>
                   </span>
                 )}
               </div>
-              <div className="mt-3 space-y-1">
-                <div className="flex justify-between text-xs text-muted-foreground font-body">
+              <div className="mt-1.5">
+                <div className="flex justify-between text-[10px] text-muted-foreground font-body">
                   <span>{xpCurrent} / {XP_PER_LEVEL} XP</span>
-                  <span>Level {stats.level + 1}</span>
+                  <span>Lvl {stats.level + 1}</span>
                 </div>
-                <Progress value={xpProgress} className="h-2" />
+                <Progress value={xpProgress} className="h-1.5 mt-0.5" />
               </div>
             </div>
           </div>
@@ -127,178 +143,223 @@ const Dashboard = () => {
 
       {/* First-Time Welcome Guide */}
       {showWelcome && (
-        <motion.div
-          className="rounded-lg border border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10 p-5"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.05 }}
-        >
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-display font-bold text-lg text-foreground">
-              Welcome to the court, {profile.username}! 🏀
-            </h2>
-            <button onClick={dismissWelcome} className="text-muted-foreground hover:text-foreground transition-colors">
-              <X size={16} />
-            </button>
+        <motion.div className="rounded-lg border border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10 p-4" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.05 }}>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="font-display font-bold text-sm text-foreground">Welcome, {profile.username}! 🏀</h2>
+            <button onClick={dismissWelcome} className="text-muted-foreground hover:text-foreground"><X size={14} /></button>
           </div>
-          <p className="text-sm text-muted-foreground font-body mb-4">Here's how to get started:</p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <button
-              onClick={() => { dismissWelcome(); navigate("/app/train"); }}
-              className="flex items-center gap-3 p-4 rounded-md border border-border bg-card hover:border-primary/30 hover:bg-primary/5 transition-all text-left"
-            >
-              <span className="text-2xl">🏀</span>
-              <div>
-                <p className="font-display font-bold text-sm text-foreground">Start Today's Workout</p>
-                <p className="text-xs text-muted-foreground font-body">Your first session is ready</p>
-              </div>
-            </button>
-            <button
-              onClick={() => { dismissWelcome(); navigate("/app/drills"); }}
-              className="flex items-center gap-3 p-4 rounded-md border border-border bg-card hover:border-primary/30 hover:bg-primary/5 transition-all text-left"
-            >
-              <BookOpen size={20} className="text-primary shrink-0" />
-              <div>
-                <p className="font-display font-bold text-sm text-foreground">Browse Drill Library</p>
-                <p className="text-xs text-muted-foreground font-body">50+ drills with video demos</p>
-              </div>
-            </button>
-            <button
-              onClick={() => { dismissWelcome(); document.querySelector<HTMLButtonElement>('[data-coach-btn]')?.click(); }}
-              className="flex items-center gap-3 p-4 rounded-md border border-border bg-card hover:border-primary/30 hover:bg-primary/5 transition-all text-left"
-            >
-              <MessageCircle size={20} className="text-primary shrink-0" />
-              <div>
-                <p className="font-display font-bold text-sm text-foreground">Talk to Your Coach</p>
-                <p className="text-xs text-muted-foreground font-body">Ask Kobe, LeBron, or Curry</p>
-              </div>
-            </button>
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { emoji: '🏀', label: 'Start Workout', action: () => { dismissWelcome(); navigate("/app/train"); } },
+              { icon: BookOpen, label: 'Drill Library', action: () => { dismissWelcome(); navigate("/app/drills"); } },
+              { icon: MessageCircle, label: 'Ask Coach', action: () => { dismissWelcome(); document.querySelector<HTMLButtonElement>('[data-coach-btn]')?.click(); } },
+            ].map((item, i) => (
+              <button key={i} onClick={item.action} className="flex flex-col items-center gap-1.5 p-3 rounded-md border border-border bg-card hover:border-primary/30 transition-all text-center">
+                {'emoji' in item ? <span className="text-lg">{item.emoji}</span> : <item.icon size={18} className="text-primary" />}
+                <span className="font-display font-bold text-[10px] text-foreground">{item.label}</span>
+              </button>
+            ))}
           </div>
-          <button onClick={dismissWelcome} className="mt-3 text-xs text-muted-foreground font-body hover:text-foreground transition-colors underline">
-            Dismiss — I'll explore on my own
-          </button>
         </motion.div>
       )}
 
-      {/* Coach's Tip */}
-      <motion.div
-        className="rounded-lg border border-primary/20 bg-primary/5 p-4 flex items-start gap-3"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.05 }}
-      >
-        <MessageSquare size={20} className="text-primary mt-0.5 shrink-0" />
-        <div>
-          <p className="font-display font-bold text-sm text-foreground mb-1">
-            Coach's Tip
-            <span className="text-xs text-muted-foreground font-body ml-2">
-              ({coachStyle === 'kobe' ? 'Kobe' : coachStyle === 'lebron' ? 'LeBron' : coachStyle === 'curry' ? 'Curry' : coachStyle === 'sir_charles' ? 'Sir Charles' : 'Phil Jackson'})
-            </span>
-          </p>
-          <p className="text-sm text-muted-foreground font-body">{tips[tipIndex]}</p>
-        </div>
-      </motion.div>
+      {/* Weekly Plan — Inline Collapsible */}
+      {plan && (
+        <motion.div className="rounded-lg border border-border bg-card overflow-hidden" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.08 }}>
+          <button onClick={() => setWeekPlanOpen(!weekPlanOpen)} className="w-full flex items-center justify-between p-3 hover:bg-muted/30 transition-colors">
+            <div className="flex items-center gap-2">
+              <p className="font-display font-bold text-sm text-foreground">This Week</p>
+              <Badge variant="outline" className="text-[10px] font-body">{completedDays}/{trainingDays} days</Badge>
+            </div>
+            {weekPlanOpen ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
+          </button>
+
+          {weekPlanOpen && (
+            <div className="px-3 pb-3 space-y-2">
+              {/* Day row */}
+              <div className="flex gap-1">
+                {ALL_DAYS.map((day, i) => {
+                  const dayPlan = plan.days[i];
+                  const isToday = i === todayDayIndex;
+                  const isRest = dayPlan?.isRestDay;
+                  const isExpanded = expandedDay === i;
+                  return (
+                    <button
+                      key={day}
+                      onClick={() => setExpandedDay(isExpanded ? -1 : i)}
+                      className={`flex-1 py-1.5 rounded text-[10px] font-display font-bold transition-all ${
+                        isToday
+                          ? 'bg-primary text-primary-foreground ring-2 ring-primary/30'
+                          : isRest
+                            ? 'bg-muted/30 text-muted-foreground'
+                            : isExpanded
+                              ? 'bg-primary/10 text-primary border border-primary/20'
+                              : 'bg-muted/50 text-foreground hover:bg-muted'
+                      }`}
+                    >
+                      {DAY_LABELS[day]}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Expanded day drills */}
+              {expandedDay >= 0 && expandedDay < 7 && (
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="space-y-1">
+                  {plan.days[expandedDay]?.isRestDay ? (
+                    <div className="text-center py-3">
+                      <p className="text-xs text-muted-foreground font-body">😴 Rest day — but pros still do form shooting</p>
+                      <Button variant="ghost" size="sm" className="text-xs text-primary mt-1" onClick={() => navigate("/app/train")}>
+                        Quick Form Shooting →
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      {plan.days[expandedDay]?.drills.slice(0, 5).map(id => {
+                        const drill = getDrillById(id);
+                        if (!drill) return null;
+                        return (
+                          <div key={id} className="flex items-center gap-2 px-2 py-1.5 rounded bg-muted/20 text-xs">
+                            <Badge variant="secondary" className="text-[8px] uppercase font-display shrink-0">{drill.category}</Badge>
+                            <span className="font-body text-foreground flex-1 truncate">{drill.name}</span>
+                            <span className="text-muted-foreground font-body shrink-0">{Math.round(drill.duration / 60)}m</span>
+                          </div>
+                        );
+                      })}
+                      {(plan.days[expandedDay]?.drills.length || 0) > 5 && (
+                        <p className="text-[10px] text-muted-foreground text-center">+{(plan.days[expandedDay]?.drills.length || 0) - 5} more</p>
+                      )}
+                    </>
+                  )}
+                </motion.div>
+              )}
+
+              <Button variant="ghost" size="sm" className="w-full text-xs text-primary" onClick={() => navigate("/app/plan")}>
+                View Full Plan →
+              </Button>
+            </div>
+          )}
+        </motion.div>
+      )}
 
       {/* Stats Row */}
-      <motion.div
-        className="grid grid-cols-2 sm:grid-cols-4 gap-3"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.1 }}
-      >
+      <motion.div className="grid grid-cols-4 gap-2" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }}>
         {[
-          { icon: Dumbbell, label: 'Drills Done', value: stats.totalDrillsCompleted },
+          { icon: Dumbbell, label: 'Drills', value: stats.totalDrillsCompleted },
           { icon: Clock, label: 'Minutes', value: stats.totalTrainingMinutes },
-          { icon: Flame, label: 'Best Streak', value: stats.longestStreak },
-          { icon: Trophy, label: 'Achievements', value: stats.achievements.length },
+          { icon: Flame, label: 'Streak', value: stats.longestStreak },
+          { icon: Trophy, label: 'Badges', value: stats.achievements.length },
         ].map(stat => (
-          <div key={stat.label} className="rounded-lg border border-border bg-card p-4 text-center">
-            <stat.icon size={20} className="mx-auto text-primary mb-2" />
-            <p className="font-display font-extrabold text-2xl text-foreground">{stat.value}</p>
-            <p className="text-xs text-muted-foreground font-body">{stat.label}</p>
+          <div key={stat.label} className="rounded-lg border border-border bg-card p-3 text-center">
+            <stat.icon size={16} className="mx-auto text-primary mb-1" />
+            <p className="font-display font-extrabold text-xl text-foreground">{stat.value}</p>
+            <p className="text-[10px] text-muted-foreground font-body">{stat.label}</p>
           </div>
         ))}
       </motion.div>
 
-      {/* Weekly Progress */}
-      <motion.div
-        className="rounded-lg border border-border bg-card p-4"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.15 }}
-      >
-        <div className="flex items-center justify-between">
-          <p className="font-display font-bold text-sm text-foreground">This Week</p>
-          <Badge variant="outline" className="text-xs font-body">
-            {completedDays}/{trainingDays} days
-          </Badge>
-        </div>
-        <Progress value={trainingDays > 0 ? (completedDays / trainingDays) * 100 : 0} className="h-2 mt-2" />
-      </motion.div>
-
-      {/* Today's Workout */}
-      <motion.div
-        className="rounded-lg border border-border bg-card p-6"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: 0.2 }}
-      >
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-display font-bold text-lg text-foreground">Today's Workout</h2>
-          {todayPlan && !todayPlan.isRestDay && (
-            <Badge variant="outline" className="text-xs font-body">
-              {totalTodayMin} min • {todayDrills.length} drills
-            </Badge>
-          )}
-        </div>
-
-        {todayPlan?.isRestDay ? (
-          <div className="text-center py-8">
-            <p className="text-4xl mb-2">😴</p>
+      {/* Context-Aware Primary CTA */}
+      <motion.div className="rounded-lg border border-border bg-card p-4" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.15 }}>
+        {completedToday ? (
+          <div className="text-center space-y-3">
+            <p className="text-3xl">🎉</p>
+            <p className="font-display font-bold text-foreground">Great work today!</p>
+            <p className="text-xs text-muted-foreground font-body">Keep the momentum going:</p>
+            <div className="flex gap-2 justify-center flex-wrap">
+              <Button variant="outline" size="sm" className="text-xs gap-1" onClick={() => navigate("/app/analyze")}>
+                <Video size={14} /> Analyze Form
+              </Button>
+              <Button variant="outline" size="sm" className="text-xs gap-1" onClick={() => navigate("/app/drills")}>
+                <BookOpen size={14} /> Browse Drills
+              </Button>
+              <Button variant="outline" size="sm" className="text-xs gap-1" onClick={() => document.querySelector<HTMLButtonElement>('[data-coach-btn]')?.click()}>
+                <MessageCircle size={14} /> Chat Coach
+              </Button>
+            </div>
+          </div>
+        ) : todayPlan?.isRestDay ? (
+          <div className="text-center space-y-2">
+            <p className="text-3xl">😴</p>
             <p className="font-display font-bold text-foreground">Rest Day</p>
-            <p className="text-sm text-muted-foreground font-body">Recovery is part of the game. Come back stronger tomorrow.</p>
+            <p className="text-xs text-muted-foreground font-body">Recovery is part of the game — but pros still do form shooting.</p>
+            <Button variant="hero" size="sm" className="mt-2" onClick={() => navigate("/app/train")}>
+              Quick Form Shooting Session 🎯
+            </Button>
           </div>
         ) : todayDrills.length > 0 ? (
-          <div className="space-y-2">
-            {todayDrills.slice(0, 4).map(drill => drill && (
-              <div key={drill.id} className="flex items-center gap-3 p-3 rounded-md bg-muted/30 border border-border/50">
-                <Badge variant="secondary" className="text-[10px] uppercase font-display">
-                  {drill.category}
-                </Badge>
-                <span className="font-body text-sm text-foreground flex-1">{drill.name}</span>
-                <span className="text-xs text-muted-foreground font-body">{Math.round(drill.duration / 60)}m</span>
-              </div>
-            ))}
-            {todayDrills.length > 4 && (
-              <p className="text-xs text-muted-foreground font-body text-center">+{todayDrills.length - 4} more drills</p>
-            )}
-            <Button variant="hero" className="w-full mt-4" onClick={() => navigate("/app/train")}>
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-display font-bold text-sm text-foreground">Today's Workout</h2>
+              <Badge variant="outline" className="text-[10px] font-body">{totalTodayMin} min • {todayDrills.length} drills</Badge>
+            </div>
+            <div className="space-y-1.5">
+              {todayDrills.slice(0, 3).map(drill => drill && (
+                <div key={drill.id} className="flex items-center gap-2 p-2 rounded bg-muted/30 border border-border/50">
+                  <Badge variant="secondary" className="text-[8px] uppercase font-display">{drill.category}</Badge>
+                  <span className="font-body text-xs text-foreground flex-1 truncate">{drill.name}</span>
+                  <span className="text-[10px] text-muted-foreground font-body">{Math.round(drill.duration / 60)}m</span>
+                </div>
+              ))}
+              {todayDrills.length > 3 && (
+                <p className="text-[10px] text-muted-foreground font-body text-center">+{todayDrills.length - 3} more drills</p>
+              )}
+            </div>
+            <Button variant="hero" className="w-full mt-3" onClick={() => navigate("/app/train")}>
               Start Workout <ChevronRight size={16} />
             </Button>
           </div>
         ) : (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground font-body">No drills planned for today.</p>
+          <div className="text-center py-4">
+            <p className="text-muted-foreground font-body text-sm">No drills planned today.</p>
+            <Button variant="outline" size="sm" className="mt-2" onClick={() => navigate("/app/plan")}>Check Plan</Button>
           </div>
         )}
       </motion.div>
 
+      {/* Coach's Tip with form shooting CTA */}
+      <motion.div className="rounded-lg border border-primary/20 bg-primary/5 p-3" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.2 }}>
+        <div className="flex items-start gap-2">
+          <MessageSquare size={16} className="text-primary mt-0.5 shrink-0" />
+          <div className="flex-1">
+            <p className="font-display font-bold text-xs text-foreground mb-0.5">
+              Coach's Tip
+              <span className="text-[10px] text-muted-foreground font-body ml-1.5">
+                ({coachStyle === 'kobe' ? 'Kobe' : coachStyle === 'lebron' ? 'LeBron' : coachStyle === 'curry' ? 'Curry' : coachStyle === 'sir_charles' ? 'Barkley' : 'Phil'})
+              </span>
+            </p>
+            <p className="text-xs text-muted-foreground font-body">{tips[tipIndex]}</p>
+            <button onClick={() => navigate("/app/train")} className="text-[10px] text-primary font-body mt-1 hover:underline">
+              Practice form shooting →
+            </button>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* What's Next */}
+      {!showWelcome && suggestions.length > 0 && (
+        <motion.div className="rounded-lg border border-border bg-card p-3 space-y-2" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.25 }}>
+          <p className="font-display font-bold text-xs text-foreground">What's Next</p>
+          {suggestions.slice(0, 3).map((s, i) => (
+            <button key={i} onClick={s.action} className="w-full flex items-center gap-2 p-2 rounded-md hover:bg-muted/30 transition-colors text-left">
+              <span className="text-sm">{s.emoji}</span>
+              <span className="text-xs font-body text-foreground">{s.text}</span>
+              <ChevronRight size={12} className="text-muted-foreground ml-auto" />
+            </button>
+          ))}
+        </motion.div>
+      )}
+
       {/* Recent Achievements */}
       {stats.achievements.length > 0 && (
-        <motion.div
-          className="rounded-lg border border-border bg-card p-6"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.3 }}
-        >
-          <h2 className="font-display font-bold text-lg text-foreground mb-4">Achievements</h2>
-          <div className="flex gap-4 flex-wrap">
+        <motion.div className="rounded-lg border border-border bg-card p-4" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.3 }}>
+          <h2 className="font-display font-bold text-sm text-foreground mb-3">Achievements</h2>
+          <div className="flex gap-3 flex-wrap">
             {stats.achievements.slice(-4).map(id => {
               const ach = ACHIEVEMENTS_MAP[id];
               return ach ? (
-                <div key={id} className="flex items-center gap-2 px-3 py-2 rounded-md bg-muted/30 border border-border/50">
-                  <span className="text-lg">{ach.icon}</span>
-                  <span className="text-sm font-body text-foreground">{ach.title}</span>
+                <div key={id} className="flex items-center gap-1.5 px-2 py-1.5 rounded-md bg-muted/30 border border-border/50">
+                  <span className="text-base">{ach.icon}</span>
+                  <span className="text-xs font-body text-foreground">{ach.title}</span>
                 </div>
               ) : null;
             })}

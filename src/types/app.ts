@@ -42,7 +42,7 @@ export interface PlayerProfile {
   equipment: Equipment[];
   daysPerWeek: number;
   trainingDays?: DayOfWeek[];
-  sessionLength: 30 | 45 | 60;
+  sessionLength: number;
   createdAt: string;
 }
 

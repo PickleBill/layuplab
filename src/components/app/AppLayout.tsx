@@ -220,6 +220,7 @@ const AppLayout = () => {
 
       {/* Main Content */}
       <main className={`flex-1 ${!isMobile ? 'ml-64' : ''} ${isMobile ? 'pb-20' : ''}`}>
+        <XpBar />
         <Outlet />
       </main>
 
