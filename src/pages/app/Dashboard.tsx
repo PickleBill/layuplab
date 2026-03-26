@@ -1,10 +1,11 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Flame, Dumbbell, Clock, Trophy, ChevronRight, MessageSquare } from "lucide-react";
+import { Flame, Dumbbell, Clock, Trophy, ChevronRight, MessageSquare, BookOpen, MessageCircle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { getProfile, getStats, getPlan, getSessions, getCoachStyle } from "@/lib/storage";
+import { getProfile, getStats, getPlan, getSessions, getCoachStyle, hasBeenWelcomed, setWelcomed } from "@/lib/storage";
 import { getXpProgress, getXpForCurrentLevel, XP_PER_LEVEL } from "@/lib/xp";
 import { getTodaysPlan } from "@/lib/plan-generator";
 import { getDrillById } from "@/lib/drills";
