@@ -33,8 +33,12 @@ const CHALLENGE_TEMPLATES = [
 
 function generateDailyChallenges(): DailyChallenge[] {
   const today = new Date().toISOString().split('T')[0];
-  const shuffled = [...CHALLENGE_TEMPLATES].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, 3).map((t, i) => ({
+  // Always include the daily form shooting challenge
+  const formChallenge = CHALLENGE_TEMPLATES.find(t => t.isDaily)!;
+  const others = CHALLENGE_TEMPLATES.filter(t => !t.isDaily);
+  const shuffled = [...others].sort(() => Math.random() - 0.5);
+  const selected = [formChallenge, ...shuffled.slice(0, 2)];
+  return selected.map((t, i) => ({
     id: `${today}-${i}`,
     title: t.title,
     description: t.description,

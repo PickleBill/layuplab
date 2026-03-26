@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Video, Upload, Camera, Loader2, Target, AlertTriangle, CheckCircle, ArrowLeft, X, Library, Calendar } from "lucide-react";
+import { Video, Upload, Camera, Loader2, Target, AlertTriangle, CheckCircle, ArrowLeft, X, Library, Calendar, MessageCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { getAnalysisHistory, saveAnalysisRecord } from "@/lib/storage";
