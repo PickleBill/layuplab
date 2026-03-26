@@ -57,11 +57,17 @@ const Dashboard = () => {
   const stats = getStats();
   const plan = getPlan();
   const todayPlan = plan ? getTodaysPlan(plan) : null;
+  const [showWelcome, setShowWelcome] = useState(!hasBeenWelcomed());
 
   if (!profile) {
     navigate("/onboarding");
     return null;
   }
+
+  const dismissWelcome = () => {
+    setWelcomed();
+    setShowWelcome(false);
+  };
 
   const xpProgress = getXpProgress(stats.xp) * 100;
   const xpCurrent = getXpForCurrentLevel(stats.xp);
