@@ -1,79 +1,47 @@
-## Plan: Drill Library, Streamlined Onboarding, and Celebrity AI Coach Onboarding
-
-Three interconnected changes: a new Drill Library page, a drastically simplified onboarding (1-2 questions), and an AI coach chatbot that handles the detailed onboarding conversationally using celebrity basketball player personas.
-
----
-
-### 1. Drill Library Page
-
-**New file: `src/pages/app/DrillLibrary.tsx**`
-
-A browsable grid of all 50+ drills from `drills.ts` with:
-
-- **Filter bar** at top: Category chips (Shooting, Dribbling, Footwork, Conditioning, Agility), Difficulty selector (1/2/3 stars), Equipment multi-select
-- **Drill cards** in a responsive grid showing: name, category badge, difficulty dots, duration, equipment tags, and a "Watch Demo" button that opens the YouTube video in a dialog
-- **Expandable detail** on click: full description, technique tip, skill levels
-- Search input for quick filtering by name
-
-**Routing:** Add `/app/drills` route in `App.tsx`. Add a "Drills" nav item (BookOpen icon) to `AppLayout.tsx` nav between Train and Plan.
-
-### 2. Streamlined Onboarding (1 panel, 2 questions)
-
-**Rewrite `src/pages/Onboarding.tsx**` — collapse the current 6-step flow into a single screen:
-
-- **Name input** — "What should we call you?"
-- **Commitment level** — 3 cards: "Just getting started" / "I'm putting in work" / "This is my life"
-- **"Let's Go" button** — saves a minimal profile with sensible defaults:
-  - `goals: ['overall']`
-  - `coachStyle: 'motivator'` (default, will be set by AI coach)
-  - `equipment: ['none']`
-  - `trainingDays`: all 7 days (coach will refine)
-  - `sessionLength: 45`
-  - `tier: 'prove_it'`
-- Generates a default plan and navigates to `/app/dashboard`
-
-This gets users into the app in under 15 seconds.
-
-### 3. Celebrity AI Coach Onboarding Chatbot
-
-**Update edge function `supabase/functions/coach-chat/index.ts`:**
-
-Replace the generic coach personas with 3 celebrity basketball player personas:
-
-- **Kobe Bryant** — Mamba Mentality. Intense, detail-oriented, demands perfection. "You think one workout is enough? Do it again."
-- **LeBron James** — Strategic, team-minded, analytical. "Let's build your game systematically. What's your weakest link?"
-- **Steph Curry** — Fun, creative, encouraging. "Shooting is an art — let's find your rhythm."
-- add a coach perspective - a famous one
-- and also a funny character ffrom  basketball lore or some other comedic type of personality 
-
-The system prompt instructs the coach to proactively ask the new user about their goals, equipment, training schedule, and preferred session length during conversation — effectively doing the detailed onboarding through natural dialogue. When the coach has enough info, it tells the user "I've updated your plan" and returns a structured JSON block (via a `[PROFILE_UPDATE]` tag in the response) that the frontend parses to update the profile and regenerate the plan.
-
-**Update `AppLayout.tsx` coach chat:**
-
-- Change `COACH_NAMES` to the 3 celebrity names
-- When the user first enters the app (no detailed profile yet), auto-open the chat with a welcome message from the default coach: "Hey [name]! I'm [Coach]. Let me ask you a few things so I can build your perfect training plan..."
-- Parse `[PROFILE_UPDATE]{...}` JSON from coach responses to update profile/plan automatically
-- Add a coach selector in the chat header (3 avatar buttons) so users can switch celebrities anytime — this updates `coachStyle` in storage and resets the chat
-
-**Update `src/types/app.ts`:**
-
-- Update `CoachStyle` type to `'kobe' | 'lebron' | 'curry'`
-
-**Update `src/lib/storage.ts`:**
-
-- Add `hasDetailedProfile(): boolean` — checks if profile has been enriched beyond defaults (e.g., goals !== ['overall'] or equipment !== ['none'])
-
----
-
-### Files Summary
 
 
-| File                                     | Change                                                                                                     |
-| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `src/pages/app/DrillLibrary.tsx`         | NEW — filterable drill grid with video modals                                                              |
-| `src/pages/Onboarding.tsx`               | Rewrite to single-panel 2-question flow                                                                    |
-| `src/App.tsx`                            | Add `/app/drills` route                                                                                    |
-| `src/components/app/AppLayout.tsx`       | Add Drills nav item, celebrity coach selector, auto-open chat for new users, parse profile updates from AI |
-| `supabase/functions/coach-chat/index.ts` | Celebrity personas (Kobe/LeBron/Curry), onboarding-aware system prompt                                     |
-| `src/types/app.ts`                       | Update CoachStyle to `'kobe'                                                                               |
-| `src/lib/storage.ts`                     | Add `hasDetailedProfile()` helper                                                                          |
+## Plan: Enhanced Onboarding + Guided First-Time Experience
+
+### Problem
+Onboarding is too bare (just name + commitment), the AI coach auto-opens and overlays the dashboard immediately, and new users face 8 nav tabs with no guidance.
+
+### Changes
+
+#### 1. Expand Onboarding with Optional Detail Panel (`src/pages/Onboarding.tsx`)
+
+Keep the current name + commitment as the top section. Below it, add a collapsible/expandable "Customize your plan" panel with:
+
+- **Session length** — 3 toggle buttons: 30 / 45 / 60 min (default 45)
+- **What to focus on** — Goal chips (Shooting, Ball Handling, Speed & Agility, Conditioning) as multi-select toggles, with "Overall" as default if none selected
+- **Training days** — 7 day-of-week toggle buttons (default all selected)
+
+The panel has a subtle header like "Optional — customize your training" with a chevron to expand/collapse. Collapsed by default so users can skip it entirely.
+
+The "Let's Go" button stays always visible below everything. Whether they customize or not, it works — defaults are already sensible.
+
+#### 2. Stop Auto-Opening Coach Chat (`src/components/app/AppLayout.tsx`)
+
+Remove the `useEffect` that auto-opens the chat and fires a greeting when `!hasDetailedProfile()`. The coach button stays floating — users open it when ready.
+
+#### 3. Add First-Time Guided Welcome to Dashboard (`src/pages/app/Dashboard.tsx`)
+
+When `!hasDetailedProfile()` (user skipped customization) OR on first visit (detect via a `layuplab_welcomed` localStorage flag), show a **welcome overlay/banner** at the top of the dashboard:
+
+- **Welcome card** with the user's name: "Welcome to the court, [Name]! Here's how to get started:"
+- **3 guided action cards** in a horizontal scroll/grid:
+  1. 🏀 **"Start Today's Workout"** — "Your first session is ready. Tap to begin." → navigates to `/app/train`
+  2. 📚 **"Browse the Drill Library"** — "Explore 50+ drills with video demos." → navigates to `/app/drills`
+  3. 💬 **"Talk to Your Coach"** — "Ask Kobe, LeBron, or Curry anything." → opens the coach chat
+- A small "Dismiss" link that sets `layuplab_welcomed = true` and hides the card permanently
+
+This guides without blocking — it's a prominent but dismissable section at the top of the dashboard.
+
+#### 4. Files Modified
+
+| File | Change |
+|------|--------|
+| `src/pages/Onboarding.tsx` | Add collapsible customization panel (session length, goals, training days) |
+| `src/components/app/AppLayout.tsx` | Remove auto-open chat `useEffect` |
+| `src/pages/app/Dashboard.tsx` | Add first-time welcome guide with 3 action cards |
+| `src/lib/storage.ts` | Add `hasBeenWelcomed()` / `setWelcomed()` helpers |
+
