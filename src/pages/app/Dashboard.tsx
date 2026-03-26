@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Flame, Dumbbell, Clock, Trophy, ChevronRight, ChevronDown, ChevronUp, MessageSquare, BookOpen, MessageCircle, Video, Target, X } from "lucide-react";
+import { Flame, Dumbbell, Clock, Trophy, ChevronRight, ChevronDown, ChevronUp, MessageSquare, BookOpen, MessageCircle, Video, Target, X, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +9,7 @@ import { getProfile, getStats, getPlan, getSessions, getCoachStyle, hasBeenWelco
 import { getXpProgress, getXpForCurrentLevel, XP_PER_LEVEL } from "@/lib/xp";
 import { getTodaysPlan } from "@/lib/plan-generator";
 import { getDrillById } from "@/lib/drills";
+import { loadRecommendationsFromCloud, requestDrillRecommendations } from "@/lib/cloud-sync";
 import { CoachStyle, DayOfWeek } from "@/types/app";
 
 const DAY_LABELS: Record<DayOfWeek, string> = {
@@ -63,6 +64,19 @@ const Dashboard = () => {
   const todayDayIndex = (new Date().getDay() + 6) % 7;
   const [expandedDay, setExpandedDay] = useState<number>(todayDayIndex);
   const [weekPlanOpen, setWeekPlanOpen] = useState(true);
+  const [recommendations, setRecommendations] = useState<any[] | null>(null);
+  const [recReasoning, setRecReasoning] = useState<string>('');
+  const [loadingRecs, setLoadingRecs] = useState(false);
+
+  // Load AI recommendations on mount
+  useEffect(() => {
+    loadRecommendationsFromCloud().then(data => {
+      if (data && new Date(data.expiresAt) > new Date()) {
+        setRecommendations(data.recommendations);
+        setRecReasoning(data.reasoning || '');
+      }
+    }).catch(() => {});
+  }, []);
 
   if (!profile) {
     navigate("/onboarding");
@@ -333,6 +347,65 @@ const Dashboard = () => {
             </button>
           </div>
         </div>
+      </motion.div>
+
+      {/* AI Drill Recommendations */}
+      <motion.div className="rounded-lg border border-primary/20 bg-gradient-to-br from-primary/5 to-transparent p-4 space-y-3" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.23 }}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Sparkles size={16} className="text-primary" />
+            <p className="font-display font-bold text-sm text-foreground">AI Drill Recommendations</p>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-xs gap-1 text-primary"
+            disabled={loadingRecs}
+            onClick={async () => {
+              setLoadingRecs(true);
+              try {
+                const data = await requestDrillRecommendations();
+                setRecommendations(data.recommendations);
+                setRecReasoning(data.overallReasoning || '');
+              } catch { /* ignore */ }
+              setLoadingRecs(false);
+            }}
+          >
+            {loadingRecs ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+            {recommendations ? 'Refresh' : 'Generate'}
+          </Button>
+        </div>
+        {recReasoning && <p className="text-xs text-muted-foreground font-body italic">{recReasoning}</p>}
+        {recommendations && recommendations.length > 0 ? (
+          <div className="space-y-1.5">
+            {recommendations.slice(0, 4).map((rec: any, i: number) => {
+              const drill = getDrillById(rec.drillId);
+              return (
+                <button
+                  key={i}
+                  onClick={() => navigate("/app/drills")}
+                  className="w-full flex items-center gap-2 p-2 rounded-md bg-card border border-border/50 hover:border-primary/30 transition-colors text-left"
+                >
+                  <Badge variant={rec.priority === 'high' ? 'default' : 'outline'} className="text-[8px] uppercase font-display shrink-0">
+                    {rec.focusArea}
+                  </Badge>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-body text-foreground truncate">{drill?.name || rec.drillId}</p>
+                    <p className="text-[10px] text-muted-foreground font-body truncate">{rec.reason}</p>
+                  </div>
+                  <ChevronRight size={12} className="text-muted-foreground shrink-0" />
+                </button>
+              );
+            })}
+          </div>
+        ) : !loadingRecs ? (
+          <p className="text-xs text-muted-foreground font-body text-center py-2">Tap "Generate" for personalized drill picks based on your training history.</p>
+        ) : (
+          <div className="flex items-center justify-center gap-2 py-4">
+            <Loader2 size={16} className="animate-spin text-primary" />
+            <p className="text-xs text-muted-foreground font-body">Analyzing your training data...</p>
+          </div>
+        )}
       </motion.div>
 
       {/* What's Next */}

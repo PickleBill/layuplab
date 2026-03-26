@@ -1,5 +1,6 @@
 import { PlayerProfile, PlayerStats, WeeklyPlan, WorkoutSession, DailyChallenge, DrillCategory, LevelTitle, AnalysisRecord, CoachStyle, DrillSession } from '@/types/app';
 import { getLevelFromXp, getLevelTitle, calculateDrillXp } from './xp';
+import { syncProfileToCloud, syncStatsToCloud, syncFavoritesToCloud, syncSessionToCloud, syncPlanToCloud } from './cloud-sync';
 
 const KEYS = {
   profile: 'layuplab_profile',
@@ -30,6 +31,7 @@ export function getProfile(): PlayerProfile | null {
 
 export function saveProfile(profile: PlayerProfile): void {
   set(KEYS.profile, profile);
+  syncProfileToCloud(profile).catch(() => {});
 }
 
 export function getCoachStyle(): CoachStyle {
@@ -54,6 +56,7 @@ export function getStats(): PlayerStats {
 
 export function saveStats(stats: PlayerStats): void {
   set(KEYS.stats, stats);
+  syncStatsToCloud(stats).catch(() => {});
 }
 
 export function addXp(amount: number): PlayerStats {
@@ -202,6 +205,7 @@ export function toggleFavorite(drillId: string): string[] {
     favs.push(drillId);
   }
   set(KEYS.favorites, favs);
+  syncFavoritesToCloud(favs).catch(() => {});
   return favs;
 }
 
@@ -229,6 +233,7 @@ export function getPlan(): WeeklyPlan | null {
 
 export function savePlan(plan: WeeklyPlan): void {
   set(KEYS.plan, plan);
+  syncPlanToCloud(plan).catch(() => {});
 }
 
 // Sessions

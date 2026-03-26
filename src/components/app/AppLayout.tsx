@@ -7,6 +7,7 @@ import XpBar from "@/components/app/XpBar";
 import { NavLink } from "@/components/NavLink";
 import { Button } from "@/components/ui/button";
 import { getCoachStyle, getProfile, hasDetailedProfile, saveProfile, savePlan } from "@/lib/storage";
+import { pushLocalDataToCloud, pullCloudDataToLocal } from "@/lib/cloud-sync";
 import { generateWeeklyPlan } from "@/lib/plan-generator";
 import { useToast } from "@/hooks/use-toast";
 import { CoachStyle, Goal, Equipment, DayOfWeek } from "@/types/app";
@@ -44,13 +45,26 @@ const AppLayout = () => {
   const [activeCoach, setActiveCoach] = useState<CoachStyle>(getCoachStyle());
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
-  const hasAutoOpened = useRef(false);
+  const hasSynced = useRef(false);
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, chatOpen]);
+
+  // Sync data with cloud on mount (once)
+  useEffect(() => {
+    if (hasSynced.current) return;
+    hasSynced.current = true;
+    
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        // Push local data to cloud, then pull cloud data to local (cloud wins for conflicts)
+        pushLocalDataToCloud().then(() => pullCloudDataToLocal()).catch(console.error);
+      }
+    });
+  }, []);
 
   // Coach chat is available via the floating button — no auto-open
 

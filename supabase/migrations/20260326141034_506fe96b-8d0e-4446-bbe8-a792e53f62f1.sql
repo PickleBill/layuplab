@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS drill_recommendations_user_id_idx ON public.drill_recommendations (user_id);
