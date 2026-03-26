@@ -56,6 +56,7 @@ export function getStats(): PlayerStats {
 
 export function saveStats(stats: PlayerStats): void {
   set(KEYS.stats, stats);
+  syncStatsToCloud(stats).catch(() => {});
 }
 
 export function addXp(amount: number): PlayerStats {
