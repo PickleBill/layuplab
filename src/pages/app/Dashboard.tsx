@@ -64,6 +64,19 @@ const Dashboard = () => {
   const todayDayIndex = (new Date().getDay() + 6) % 7;
   const [expandedDay, setExpandedDay] = useState<number>(todayDayIndex);
   const [weekPlanOpen, setWeekPlanOpen] = useState(true);
+  const [recommendations, setRecommendations] = useState<any[] | null>(null);
+  const [recReasoning, setRecReasoning] = useState<string>('');
+  const [loadingRecs, setLoadingRecs] = useState(false);
+
+  // Load AI recommendations on mount
+  useEffect(() => {
+    loadRecommendationsFromCloud().then(data => {
+      if (data && new Date(data.expiresAt) > new Date()) {
+        setRecommendations(data.recommendations);
+        setRecReasoning(data.reasoning || '');
+      }
+    }).catch(() => {});
+  }, []);
 
   if (!profile) {
     navigate("/onboarding");
