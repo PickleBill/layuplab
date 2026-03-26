@@ -205,6 +205,7 @@ export function toggleFavorite(drillId: string): string[] {
     favs.push(drillId);
   }
   set(KEYS.favorites, favs);
+  syncFavoritesToCloud(favs).catch(() => {});
   return favs;
 }
 
