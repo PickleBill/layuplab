@@ -31,6 +31,7 @@ export function getProfile(): PlayerProfile | null {
 
 export function saveProfile(profile: PlayerProfile): void {
   set(KEYS.profile, profile);
+  syncProfileToCloud(profile).catch(() => {});
 }
 
 export function getCoachStyle(): CoachStyle {
