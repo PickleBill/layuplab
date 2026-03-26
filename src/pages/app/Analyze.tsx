@@ -385,6 +385,17 @@ const Analyze = () => {
                 {result && (
                   <>
                     {renderResults(result)}
+                    <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-center space-y-2">
+                      <p className="text-sm font-body text-foreground">
+                        🏆 You're already ahead of 90% of players by analyzing your form. Keep pushing!
+                      </p>
+                      <p className="text-xs text-muted-foreground font-body">
+                        Want to improve? Start with form shooting basics →
+                      </p>
+                      <Button variant="outline" size="sm" className="gap-1" onClick={() => document.querySelector<HTMLButtonElement>('[data-coach-btn]')?.click()}>
+                        <MessageCircle size={14} /> Chat with your coach about these results
+                      </Button>
+                    </div>
                     <Button variant="outline" className="w-full" onClick={() => { setImagePreview(null); setResult(null); }}>
                       <ArrowLeft size={16} /> Analyze Another
                     </Button>
