@@ -242,6 +242,7 @@ const AppLayout = () => {
       {/* Floating Ask Coach Button */}
       {!chatOpen && (
         <button
+          data-coach-btn
           onClick={() => setChatOpen(true)}
           className={`fixed z-50 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:scale-105 transition-transform ${
             isMobile ? 'bottom-24 right-4' : 'bottom-6 right-6'
