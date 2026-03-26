@@ -50,21 +50,7 @@ const AppLayout = () => {
     }
   }, [messages, chatOpen]);
 
-  // Auto-open chat for new users who haven't been profiled
-  useEffect(() => {
-    if (!hasAutoOpened.current && !hasDetailedProfile()) {
-      hasAutoOpened.current = true;
-      const profile = getProfile();
-      if (profile) {
-        setChatOpen(true);
-        // Send initial greeting trigger
-        const greeting: Msg = { role: "user", content: "Hey coach, I just joined Layup Lab!" };
-        setMessages([greeting]);
-        setIsLoading(true);
-        streamCoachResponse([greeting], true, profile.username);
-      }
-    }
-  }, []);
+  // Coach chat is available via the floating button — no auto-open
 
   const parseProfileUpdate = (text: string) => {
     const match = text.match(/\[PROFILE_UPDATE\]([\s\S]*?)\[\/PROFILE_UPDATE\]/);

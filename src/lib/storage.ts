@@ -147,6 +147,15 @@ export function hasDetailedProfile(): boolean {
   return !(p.goals.length === 1 && p.goals[0] === 'overall' && p.equipment.length === 1 && p.equipment[0] === 'none');
 }
 
+export function hasBeenWelcomed(): boolean {
+  return localStorage.getItem('layuplab_welcomed') === 'true';
+}
+
+export function setWelcomed(): void {
+  localStorage.setItem('layuplab_welcomed', 'true');
+}
+
 export function resetAllData(): void {
   Object.values(KEYS).forEach(k => localStorage.removeItem(k));
+  localStorage.removeItem('layuplab_welcomed');
 }
