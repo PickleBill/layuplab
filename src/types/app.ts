@@ -6,7 +6,7 @@ export type CoachStyle = 'kobe' | 'lebron' | 'curry' | 'sir_charles' | 'phil';
 
 export type Tier = 'prove_it' | 'lock_in' | 'no_limits';
 
-export type Goal = 'shooting' | 'ball_handling' | 'speed_agility' | 'conditioning' | 'overall';
+export type Goal = 'shooting' | 'ball_handling' | 'speed_agility' | 'conditioning' | 'defense' | 'overall';
 
 export type Equipment = 'hoop' | 'cones' | 'resistance_band' | 'jump_rope' | 'none';
 
