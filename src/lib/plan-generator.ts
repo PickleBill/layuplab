@@ -98,11 +98,27 @@ function pickDrillsForDay(
   const picked: string[] = [];
   let remainingTime = sessionLengthSec;
 
-  const timePerCategory = Math.floor(sessionLengthSec / categories.length);
+  // Give shooting at least 25% of session time, dribbling 20%, others split the rest
+  const hasShooting = categories.includes('shooting');
+  const hasDribbling = categories.includes('dribbling');
+  const hasConditioning = categories.includes('conditioning');
+  const otherCats = categories.filter(c => c !== 'shooting' && c !== 'dribbling' && c !== 'conditioning');
 
-  for (const cat of categories) {
+  const timeBudget: Record<string, number> = {};
+  if (hasShooting) timeBudget['shooting'] = Math.floor(sessionLengthSec * 0.25);
+  if (hasDribbling) timeBudget['dribbling'] = Math.floor(sessionLengthSec * 0.20);
+  if (hasConditioning) timeBudget['conditioning'] = Math.floor(sessionLengthSec * 0.15);
+  const allocated = Object.values(timeBudget).reduce((s, v) => s + v, 0);
+  const otherTime = otherCats.length > 0 ? Math.floor((sessionLengthSec - allocated) / otherCats.length) : 0;
+  for (const c of otherCats) timeBudget[c] = otherTime;
+
+  // Pick drills per category with weighted budgets
+  // Process shooting first to guarantee it gets filled
+  const orderedCats = ['shooting', 'dribbling', ...otherCats, 'conditioning'].filter(c => categories.includes(c as DrillCategory));
+
+  for (const cat of orderedCats) {
     const catDrills = shuffle(availableDrills.filter(d => d.category === cat));
-    let catTime = timePerCategory;
+    let catTime = timeBudget[cat] || Math.floor(sessionLengthSec / categories.length);
     for (const drill of catDrills) {
       if (catTime <= 0) break;
       if (drill.duration <= catTime && drill.duration <= remainingTime) {
@@ -113,7 +129,20 @@ function pickDrillsForDay(
     }
   }
 
-  // Fill remaining time
+  // Fill remaining time, prioritizing shooting drills first
+  if (remainingTime > 60) {
+    const shootingRemaining = shuffle(
+      availableDrills.filter(d => d.category === 'shooting' && !picked.includes(d.id))
+    );
+    for (const drill of shootingRemaining) {
+      if (remainingTime <= 0) break;
+      if (drill.duration <= remainingTime) {
+        picked.push(drill.id);
+        remainingTime -= drill.duration;
+      }
+    }
+  }
+
   if (remainingTime > 60) {
     const remaining = shuffle(
       availableDrills.filter(d => categories.includes(d.category) && !picked.includes(d.id))
