@@ -6,11 +6,11 @@ export type CoachStyle = 'kobe' | 'lebron' | 'curry' | 'sir_charles' | 'phil';
 
 export type Tier = 'prove_it' | 'lock_in' | 'no_limits';
 
-export type Goal = 'shooting' | 'ball_handling' | 'speed_agility' | 'conditioning' | 'overall';
+export type Goal = 'shooting' | 'ball_handling' | 'speed_agility' | 'conditioning' | 'defense' | 'overall';
 
 export type Equipment = 'hoop' | 'cones' | 'resistance_band' | 'jump_rope' | 'none';
 
-export type DrillCategory = 'shooting' | 'dribbling' | 'footwork' | 'conditioning' | 'agility';
+export type DrillCategory = 'warm_up' | 'shooting' | 'dribbling' | 'footwork' | 'conditioning' | 'agility' | 'defense';
 
 export type Difficulty = 1 | 2 | 3;
 
@@ -110,7 +110,7 @@ export interface Achievement {
 export interface AnalysisRecord {
   id: string;
   date: string;
-  analysisType: 'shooting' | 'dribbling' | 'footwork';
+  analysisType: 'shooting' | 'dribbling' | 'footwork' | 'defense';
   thumbnailDataUrl: string;
   overallScore: number;
   summary: string;

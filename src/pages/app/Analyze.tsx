@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { getAnalysisHistory, saveAnalysisRecord } from "@/lib/storage";
 import { AnalysisRecord } from "@/types/app";
 
-type AnalysisType = 'shooting' | 'dribbling' | 'footwork';
+type AnalysisType = 'shooting' | 'dribbling' | 'footwork' | 'defense';
 
 interface Correction {
   area: string;
@@ -296,7 +296,7 @@ const Analyze = () => {
             <>
               {/* Analysis Type Selector */}
               <div className="flex gap-2">
-                {(['shooting', 'dribbling', 'footwork'] as AnalysisType[]).map(type => (
+                {(['shooting', 'dribbling', 'footwork', 'defense'] as AnalysisType[]).map(type => (
                   <button
                     key={type}
                     onClick={() => setAnalysisType(type)}

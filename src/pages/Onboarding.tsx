@@ -17,6 +17,7 @@ const COMMITMENT_LEVELS: { value: CommitmentLevel; label: string; desc: string; 
 const GOALS: { value: Goal; label: string; emoji: string }[] = [
   { value: 'shooting', label: 'Shooting', emoji: '🎯' },
   { value: 'ball_handling', label: 'Ball Handling', emoji: '🏀' },
+  { value: 'defense', label: 'Defense', emoji: '🛡️' },
   { value: 'speed_agility', label: 'Speed & Agility', emoji: '⚡' },
   { value: 'conditioning', label: 'Conditioning', emoji: '🫁' },
 ];

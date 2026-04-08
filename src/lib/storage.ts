@@ -45,7 +45,7 @@ export function getDefaultStats(): PlayerStats {
     currentStreak: 0, longestStreak: 0,
     totalDrillsCompleted: 0, totalTrainingMinutes: 0,
     lastWorkoutDate: null,
-    skillRatings: { shooting: 10, dribbling: 10, footwork: 10, conditioning: 10, agility: 10 },
+    skillRatings: { shooting: 10, dribbling: 10, footwork: 10, conditioning: 10, agility: 10, defense: 10, warm_up: 10 },
     achievements: [],
   };
 }
