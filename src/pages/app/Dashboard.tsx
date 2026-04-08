@@ -338,7 +338,7 @@ const Dashboard = () => {
             <p className="font-display font-bold text-xs text-foreground mb-0.5">
               Coach's Tip
               <span className="text-[10px] text-muted-foreground font-body ml-1.5">
-                ({coachStyle === 'kobe' ? 'Kobe' : coachStyle === 'lebron' ? 'LeBron' : coachStyle === 'curry' ? 'Curry' : coachStyle === 'sir_charles' ? 'Barkley' : 'Phil'})
+                ({coachStyle === 'mamba' ? 'Marcus' : coachStyle === 'queen' ? 'Aaliyah' : coachStyle === 'chef' ? 'Jordan' : coachStyle === 'big_t' ? 'Tanya' : 'Maya'})
               </span>
             </p>
             <p className="text-xs text-muted-foreground font-body">{tips[tipIndex]}</p>
