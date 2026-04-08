@@ -12,17 +12,21 @@ import { toast } from "sonner";
 const CATEGORIES: { value: DrillCategory | 'all' | 'favorites'; label: string }[] = [
   { value: 'all', label: 'All' },
   { value: 'favorites', label: '❤️ Favorites' },
+  { value: 'warm_up', label: 'Warm-Up' },
   { value: 'shooting', label: 'Shooting' },
   { value: 'dribbling', label: 'Dribbling' },
   { value: 'footwork', label: 'Footwork' },
+  { value: 'defense', label: 'Defense' },
   { value: 'conditioning', label: 'Conditioning' },
   { value: 'agility', label: 'Agility' },
 ];
 
 const CATEGORY_COLORS: Record<DrillCategory, string> = {
+  warm_up: 'bg-yellow-500/20 text-yellow-400',
   shooting: 'bg-primary/20 text-primary',
   dribbling: 'bg-accent/20 text-accent',
   footwork: 'bg-blue-500/20 text-blue-400',
+  defense: 'bg-purple-500/20 text-purple-400',
   conditioning: 'bg-red-500/20 text-red-400',
   agility: 'bg-green-500/20 text-green-400',
 };
