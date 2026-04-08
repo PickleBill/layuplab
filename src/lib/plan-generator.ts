@@ -12,15 +12,27 @@ const GOAL_TO_CATEGORIES: Record<string, DrillCategory[]> = {
   overall: ['shooting', 'dribbling', 'footwork', 'conditioning', 'agility', 'defense'],
 };
 
-const CATEGORY_PRIORITY: Record<DrillCategory, number> = {
+/**
+ * Session ordering priority:
+ * 1. Warm-up
+ * 2. Dribbling (ball handling)
+ * 3. Shooting / Defense / Footwork / Agility (main work)
+ * 4. Conditioning (finisher)
+ */
+const SESSION_ORDER: Record<DrillCategory, number> = {
   warm_up: 0,
-  shooting: 1,
-  footwork: 2,
-  dribbling: 3,
+  dribbling: 1,
+  shooting: 2,
+  footwork: 3,
   defense: 4,
   agility: 5,
   conditioning: 6,
 };
+
+// Categories that are ALWAYS included if the user selected them
+const ALWAYS_INCLUDE: DrillCategory[] = ['shooting', 'dribbling'];
+// Conditioning always goes at the end if selected
+const FINISHER: DrillCategory = 'conditioning';
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -31,6 +43,53 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
+/**
+ * From the user's selected categories, build a daily focus that:
+ * - Always includes shooting & dribbling (if user selected them)
+ * - Always includes conditioning at the end (if selected)
+ * - Rotates the remaining categories (defense, agility, footwork) across days
+ *   so each day feels different
+ */
+function buildDailyFocusRotation(
+  allCategories: DrillCategory[],
+  numTrainingDays: number
+): DrillCategory[][] {
+  const alwaysOn = allCategories.filter(c => ALWAYS_INCLUDE.includes(c) || c === FINISHER);
+  const rotating = allCategories.filter(c => !ALWAYS_INCLUDE.includes(c) && c !== FINISHER);
+
+  const rotations: DrillCategory[][] = [];
+
+  for (let dayIdx = 0; dayIdx < numTrainingDays; dayIdx++) {
+    const dayFocus: DrillCategory[] = [];
+
+    // Always-on categories first (shooting, dribbling)
+    for (const c of alwaysOn) {
+      if (c !== FINISHER) dayFocus.push(c);
+    }
+
+    // Pick 1-2 rotating categories, cycling through them
+    if (rotating.length > 0) {
+      // Each day picks a different subset
+      const pick1 = rotating[dayIdx % rotating.length];
+      dayFocus.push(pick1);
+      // If we have enough rotating cats and enough time, add a second
+      if (rotating.length > 1 && numTrainingDays <= rotating.length) {
+        const pick2 = rotating[(dayIdx + 1) % rotating.length];
+        if (pick2 !== pick1) dayFocus.push(pick2);
+      }
+    }
+
+    // Conditioning always last
+    if (allCategories.includes(FINISHER)) {
+      dayFocus.push(FINISHER);
+    }
+
+    rotations.push(dayFocus);
+  }
+
+  return rotations;
+}
+
 function pickDrillsForDay(
   categories: DrillCategory[],
   availableDrills: Drill[],
@@ -39,7 +98,6 @@ function pickDrillsForDay(
   const picked: string[] = [];
   let remainingTime = sessionLengthSec;
 
-  // Pick drills from ALL categories, distributing time roughly equally
   const timePerCategory = Math.floor(sessionLengthSec / categories.length);
 
   for (const cat of categories) {
@@ -55,9 +113,11 @@ function pickDrillsForDay(
     }
   }
 
-  // Fill remaining time with any category drills
+  // Fill remaining time
   if (remainingTime > 60) {
-    const remaining = shuffle(availableDrills.filter(d => categories.includes(d.category) && !picked.includes(d.id)));
+    const remaining = shuffle(
+      availableDrills.filter(d => categories.includes(d.category) && !picked.includes(d.id))
+    );
     for (const drill of remaining) {
       if (remainingTime <= 0) break;
       if (drill.duration <= remainingTime) {
@@ -67,30 +127,27 @@ function pickDrillsForDay(
     }
   }
 
+  // Sort by session order: warm_up → dribbling → shooting → defense → conditioning
   picked.sort((a, b) => {
     const drillA = getDrillById(a);
     const drillB = getDrillById(b);
     if (!drillA || !drillB) return 0;
-    const catPriorityA = CATEGORY_PRIORITY[drillA.category];
-    const catPriorityB = CATEGORY_PRIORITY[drillB.category];
-    if (catPriorityA !== catPriorityB) return catPriorityA - catPriorityB;
+    const orderA = SESSION_ORDER[drillA.category];
+    const orderB = SESSION_ORDER[drillB.category];
+    if (orderA !== orderB) return orderA - orderB;
     return drillA.difficulty - drillB.difficulty;
   });
 
   return picked;
 }
 
-/**
- * Prepends warm-up drills to the session.
- */
 function addWarmUp(drills: string[], skillLevel: string, sessionLengthSec: number): string[] {
   const warmUps = getWarmUpDrills(skillLevel);
-  // Use ~10% of session time for warm-up, min 3 min, max 10 min
   const warmUpBudget = Math.min(Math.max(Math.floor(sessionLengthSec * 0.1), 180), 600);
   const warmUpIds: string[] = [];
   let warmUpTime = 0;
 
-  for (const wu of warmUps) {
+  for (const wu of shuffle(warmUps)) {
     if (warmUpTime + wu.duration <= warmUpBudget) {
       warmUpIds.push(wu.id);
       warmUpTime += wu.duration;
@@ -101,7 +158,7 @@ function addWarmUp(drills: string[], skillLevel: string, sessionLengthSec: numbe
 }
 
 /**
- * Ensures form shooting (s1 or s2 fallback) is in the session (after warm-up).
+ * Ensures form shooting (s1 or s2 fallback) is in the session right after warm-up.
  */
 function ensureFormShooting(drills: string[], availableDrills: Drill[]): string[] {
   const FORM_SHOOTING_ID = 's1';
@@ -109,12 +166,10 @@ function ensureFormShooting(drills: string[], availableDrills: Drill[]): string[
 
   if (drills.includes(FORM_SHOOTING_ID) || drills.includes(FALLBACK_ID)) return drills;
 
-  const formDrill = availableDrills.find(d => d.id === FORM_SHOOTING_ID);
-  const fallbackDrill = availableDrills.find(d => d.id === FALLBACK_ID);
-  const drillToInsert = formDrill || fallbackDrill;
+  const drillToInsert = availableDrills.find(d => d.id === FORM_SHOOTING_ID)
+    || availableDrills.find(d => d.id === FALLBACK_ID);
   if (!drillToInsert) return drills;
 
-  // Insert after warm-up drills
   const firstNonWarmUp = drills.findIndex(id => {
     const d = getDrillById(id);
     return d && d.category !== 'warm_up';
@@ -129,9 +184,8 @@ export function generateWeeklyPlan(profile: PlayerProfile): WeeklyPlan {
   const { skillLevel, goals, equipment, sessionLength, trainingDays } = profile;
   const sessionSec = sessionLength * 60;
 
-  // ALL selected focus categories go into EVERY training day
   const focusCategories = [...new Set(goals.flatMap(g => GOAL_TO_CATEGORIES[g] || []))];
-  if (focusCategories.length === 0) focusCategories.push('shooting', 'dribbling', 'footwork');
+  if (focusCategories.length === 0) focusCategories.push('shooting', 'dribbling');
 
   const available = getFilteredDrills(skillLevel, equipment);
 
@@ -151,19 +205,21 @@ export function generateWeeklyPlan(profile: PlayerProfile): WeeklyPlan {
     }
   }
 
+  const numTrainingDays = trainingDayIndices.length;
+  const dailyFocusRotations = buildDailyFocusRotation(focusCategories, numTrainingDays);
+
+  let rotationIdx = 0;
   const days: DayPlan[] = ALL_DAYS.map((day, index) => {
     const isTrainingDay = trainingDayIndices.includes(index);
     if (!isTrainingDay) {
       return { day, focus: [], drills: [], isRestDay: true };
     }
 
-    // ALL focus categories in every session
-    const dayFocus = [...focusCategories];
+    const dayFocus = dailyFocusRotations[rotationIdx % dailyFocusRotations.length];
+    rotationIdx++;
 
     let drills = pickDrillsForDay(dayFocus, available, sessionSec);
-    // Add warm-up before everything
     drills = addWarmUp(drills, skillLevel, sessionSec);
-    // Ensure form shooting after warm-up
     drills = ensureFormShooting(drills, available);
 
     return { day, focus: dayFocus, drills, isRestDay: false };
