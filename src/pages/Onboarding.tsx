@@ -91,7 +91,7 @@ const Onboarding = () => {
       coachStyle: 'kobe',
       tier: 'prove_it',
       goals: selectedGoals.length > 0 ? selectedGoals : ['overall'],
-      equipment: ['none'],
+      equipment: ['none', 'hoop'],
       daysPerWeek: selectedDays.length,
       trainingDays: selectedDays,
       sessionLength,
