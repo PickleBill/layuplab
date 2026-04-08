@@ -33,16 +33,77 @@ const PRIORITY_COLORS: Record<string, string> = {
   low: 'border-muted-foreground/30 bg-muted/20 text-muted-foreground',
 };
 
+/**
+ * Extract multiple frames from a video at evenly spaced intervals.
+ * Returns an array of base64 JPEG data URLs.
+ */
+function extractFramesFromVideo(file: File, numFrames = 3): Promise<string[]> {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement('video');
+    const url = URL.createObjectURL(file);
+    video.src = url;
+    video.muted = true;
+    video.preload = 'auto';
+
+    video.onloadedmetadata = () => {
+      const duration = video.duration;
+      if (!duration || duration < 0.5) {
+        URL.revokeObjectURL(url);
+        reject(new Error('Video too short'));
+        return;
+      }
+
+      const times: number[] = [];
+      for (let i = 0; i < numFrames; i++) {
+        times.push((duration * (i + 1)) / (numFrames + 1));
+      }
+
+      const frames: string[] = [];
+      let idx = 0;
+
+      const seekAndCapture = () => {
+        if (idx >= times.length) {
+          URL.revokeObjectURL(url);
+          resolve(frames);
+          return;
+        }
+        video.currentTime = times[idx];
+      };
+
+      video.onseeked = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.min(video.videoWidth, 1280);
+        canvas.height = Math.round(canvas.width * (video.videoHeight / video.videoWidth));
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
+        frames.push(canvas.toDataURL('image/jpeg', 0.7));
+        idx++;
+        seekAndCapture();
+      };
+
+      seekAndCapture();
+    };
+
+    video.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('Failed to load video'));
+    };
+  });
+}
+
 const Analyze = () => {
   const [analysisType, setAnalysisType] = useState<AnalysisType>('shooting');
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [isRecording, setIsRecording] = useState(false);
+  const [recordedChunks, setRecordedChunks] = useState<Blob[]>([]);
   const [selectedRecord, setSelectedRecord] = useState<AnalysisRecord | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const liveVideoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
 
   const analysisHistory = getAnalysisHistory();
 
@@ -50,80 +111,95 @@ const Analyze = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.type.startsWith('video/')) {
-      extractFrameFromVideo(file);
-    } else if (file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        setImagePreview(ev.target?.result as string);
-        setResult(null);
-      };
-      reader.readAsDataURL(file);
-    } else {
-      toast.error("Please upload an image or video file");
+    if (!file.type.startsWith('video/')) {
+      toast.error("Please upload a video file (.mp4, .mov, .webm, etc.)");
+      return;
     }
-  };
 
-  const extractFrameFromVideo = (file: File) => {
-    const video = document.createElement('video');
-    const url = URL.createObjectURL(file);
-    video.src = url;
-    video.currentTime = 1;
-    video.onloadeddata = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const ctx = canvas.getContext('2d');
-      ctx?.drawImage(video, 0, 0);
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-      setImagePreview(dataUrl);
-      setResult(null);
-      URL.revokeObjectURL(url);
-    };
+    setVideoFile(file);
+    setVideoPreviewUrl(URL.createObjectURL(file));
+    setResult(null);
   };
 
   const startCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: false,
       });
       streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
+      if (liveVideoRef.current) {
+        liveVideoRef.current.srcObject = stream;
       }
+
+      const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+      const chunks: Blob[] = [];
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunks.push(e.data);
+      };
+      recorder.onstop = () => {
+        const blob = new Blob(chunks, { type: 'video/webm' });
+        const file = new File([blob], 'recording.webm', { type: 'video/webm' });
+        setVideoFile(file);
+        setVideoPreviewUrl(URL.createObjectURL(blob));
+        setRecordedChunks([]);
+      };
+      recorderRef.current = recorder;
+      recorder.start();
+      setRecordedChunks([]);
       setIsRecording(true);
     } catch {
       toast.error("Unable to access camera. Please check permissions.");
     }
   };
 
-  const captureFrame = () => {
-    if (!videoRef.current) return;
-    const canvas = document.createElement('canvas');
-    canvas.width = videoRef.current.videoWidth;
-    canvas.height = videoRef.current.videoHeight;
-    const ctx = canvas.getContext('2d');
-    ctx?.drawImage(videoRef.current, 0, 0);
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-    setImagePreview(dataUrl);
-    setResult(null);
-    stopCamera();
-  };
-
-  const stopCamera = useCallback(() => {
+  const stopRecording = useCallback(() => {
+    recorderRef.current?.stop();
     streamRef.current?.getTracks().forEach(t => t.stop());
     streamRef.current = null;
+    recorderRef.current = null;
     setIsRecording(false);
   }, []);
 
-  const analyzeImage = async () => {
-    if (!imagePreview) return;
+  const cancelRecording = useCallback(() => {
+    recorderRef.current?.stop();
+    streamRef.current?.getTracks().forEach(t => t.stop());
+    streamRef.current = null;
+    recorderRef.current = null;
+    setIsRecording(false);
+    setVideoFile(null);
+    setVideoPreviewUrl(null);
+  }, []);
+
+  const clearVideo = () => {
+    if (videoPreviewUrl) URL.revokeObjectURL(videoPreviewUrl);
+    setVideoFile(null);
+    setVideoPreviewUrl(null);
+    setResult(null);
+  };
+
+  const analyzeVideo = async () => {
+    if (!videoFile) return;
     setIsAnalyzing(true);
 
     try {
-      const base64 = imagePreview.split(',')[1];
+      toast.info("Extracting frames from your video...");
+      const frames = await extractFramesFromVideo(videoFile, 3);
+
+      if (frames.length === 0) {
+        throw new Error('Could not extract frames from video');
+      }
+
+      // Send frames as separate images for analysis
+      const imageContents = frames.map((frame) => ({
+        type: "image_url" as const,
+        image_url: { url: frame },
+      }));
+
+      const base64Frames = frames.map(f => f.split(',')[1]);
+
       const { data, error } = await supabase.functions.invoke('analyze-form', {
-        body: { imageBase64: base64, analysisType },
+        body: { frames: base64Frames, analysisType },
       });
 
       if (error) throw new Error(error.message || 'Analysis failed');
@@ -132,11 +208,10 @@ const Analyze = () => {
       const analysisResult = data as AnalysisResult;
       setResult(analysisResult);
 
-      // Save to history
-      // Create a smaller thumbnail for storage
+      // Save to history — use first frame as thumbnail
       const thumbnailCanvas = document.createElement('canvas');
       const img = new Image();
-      img.src = imagePreview;
+      img.src = frames[0];
       await new Promise<void>((resolve) => {
         img.onload = () => {
           const scale = 200 / Math.max(img.width, img.height);
@@ -146,7 +221,6 @@ const Analyze = () => {
           ctx?.drawImage(img, 0, 0, thumbnailCanvas.width, thumbnailCanvas.height);
           resolve();
         };
-        // If image is already loaded (data URL)
         if (img.complete) {
           const scale = 200 / Math.max(img.width, img.height);
           thumbnailCanvas.width = img.width * scale;
@@ -170,7 +244,6 @@ const Analyze = () => {
         detailedNotes: analysisResult.detailedNotes,
       };
       saveAnalysisRecord(record);
-
       toast.success("Analysis complete!");
     } catch (err: any) {
       console.error('Analysis error:', err);
@@ -192,7 +265,6 @@ const Analyze = () => {
       animate={{ opacity: 1, y: 0 }}
       className="space-y-6"
     >
-      {/* Score Header */}
       <div className="rounded-lg border border-border bg-card p-6 text-center">
         <p className="text-xs text-muted-foreground font-body uppercase tracking-wider mb-2">Overall Score</p>
         <p className={`font-display font-extrabold text-6xl ${getScoreColor(data.overallScore)}`}>
@@ -201,7 +273,6 @@ const Analyze = () => {
         <p className="text-muted-foreground font-body mt-2">{data.summary}</p>
       </div>
 
-      {/* Strengths */}
       <div className="rounded-lg border border-border bg-card p-6">
         <h3 className="font-display font-bold text-foreground mb-3 flex items-center gap-2">
           <CheckCircle size={18} className="text-accent" /> Strengths
@@ -216,7 +287,6 @@ const Analyze = () => {
         </div>
       </div>
 
-      {/* Corrections */}
       <div className="rounded-lg border border-border bg-card p-6">
         <h3 className="font-display font-bold text-foreground mb-3 flex items-center gap-2">
           <AlertTriangle size={18} className="text-primary" /> Corrections
@@ -235,7 +305,6 @@ const Analyze = () => {
         </div>
       </div>
 
-      {/* Drill Recommendations */}
       <div className="rounded-lg border border-border bg-card p-6">
         <h3 className="font-display font-bold text-foreground mb-3">Recommended Drills</h3>
         <div className="flex flex-wrap gap-2">
@@ -245,7 +314,6 @@ const Analyze = () => {
         </div>
       </div>
 
-      {/* Detailed Notes */}
       {data.detailedNotes && (
         <div className="rounded-lg border border-border bg-card p-6">
           <h3 className="font-display font-bold text-foreground mb-3">Detailed Analysis</h3>
@@ -257,11 +325,10 @@ const Analyze = () => {
 
   return (
     <div className="p-6 max-w-3xl mx-auto space-y-6">
-      {/* Aspirational Intro */}
       <div>
         <h1 className="font-display font-extrabold text-2xl text-foreground">AI Form Analysis</h1>
         <p className="text-sm text-muted-foreground font-body mt-1">
-          The pros film every practice. Upload your clip and let AI break down your mechanics.
+          Film yourself training and let AI break down your mechanics. Upload a video or record one now.
         </p>
       </div>
 
@@ -276,7 +343,6 @@ const Analyze = () => {
         </TabsList>
 
         <TabsContent value="analyze" className="space-y-6 mt-4">
-          {/* Viewing a past record's results */}
           {selectedRecord && (
             <div className="space-y-4">
               <Button variant="ghost" size="sm" onClick={() => setSelectedRecord(null)}>
@@ -295,7 +361,7 @@ const Analyze = () => {
           {!selectedRecord && (
             <>
               {/* Analysis Type Selector */}
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 {(['shooting', 'dribbling', 'footwork', 'defense'] as AnalysisType[]).map(type => (
                   <button
                     key={type}
@@ -311,21 +377,25 @@ const Analyze = () => {
                 ))}
               </div>
 
-              {/* Camera View */}
+              {/* Camera Recording View */}
               <AnimatePresence>
                 {isRecording && (
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
-                    className="rounded-lg border border-border overflow-hidden relative"
+                    className="rounded-lg border border-destructive/40 overflow-hidden relative"
                   >
-                    <video ref={videoRef} autoPlay playsInline muted className="w-full aspect-video object-cover bg-card" />
+                    <video ref={liveVideoRef} autoPlay playsInline muted className="w-full aspect-video object-cover bg-card" />
+                    <div className="absolute top-4 left-4 flex items-center gap-2">
+                      <span className="w-3 h-3 rounded-full bg-destructive animate-pulse" />
+                      <span className="text-xs font-display font-bold text-destructive">RECORDING</span>
+                    </div>
                     <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-3">
-                      <Button variant="hero" onClick={captureFrame}>
-                        <Camera size={16} /> Capture Frame
+                      <Button variant="hero" onClick={stopRecording}>
+                        <Video size={16} /> Stop & Use Video
                       </Button>
-                      <Button variant="outline" onClick={stopCamera}>
+                      <Button variant="outline" onClick={cancelRecording}>
                         <X size={16} /> Cancel
                       </Button>
                     </div>
@@ -334,45 +404,54 @@ const Analyze = () => {
               </AnimatePresence>
 
               {/* Upload Area */}
-              {!isRecording && !imagePreview && (
+              {!isRecording && !videoPreviewUrl && (
                 <div className="rounded-lg border-2 border-dashed border-border bg-card/50 p-12 text-center">
                   <Video size={48} className="mx-auto text-muted-foreground mb-4" />
-                  <p className="font-body text-muted-foreground mb-6">
-                    Upload a photo/video of your {analysisType} form, or use your camera
+                  <p className="font-body text-muted-foreground mb-2">
+                    Upload a video of your {analysisType} form
+                  </p>
+                  <p className="font-body text-xs text-muted-foreground/70 mb-6">
+                    Supports .mp4, .mov, .webm — AI will analyze multiple frames from your clip
                   </p>
                   <div className="flex justify-center gap-3">
                     <Button variant="hero" onClick={() => fileInputRef.current?.click()}>
-                      <Upload size={16} /> Upload File
+                      <Upload size={16} /> Upload Video
                     </Button>
                     <Button variant="outline" onClick={startCamera}>
-                      <Camera size={16} /> Use Camera
+                      <Camera size={16} /> Record Now
                     </Button>
                   </div>
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept="image/*,video/*"
+                    accept="video/*"
+                    capture="environment"
                     onChange={handleFileUpload}
                     className="hidden"
                   />
                 </div>
               )}
 
-              {/* Image Preview */}
-              {imagePreview && !result && (
+              {/* Video Preview */}
+              {videoPreviewUrl && !result && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
                   <div className="rounded-lg border border-border overflow-hidden relative">
-                    <img src={imagePreview} alt="Upload preview" className="w-full aspect-video object-cover" />
+                    <video
+                      src={videoPreviewUrl}
+                      controls
+                      playsInline
+                      className="w-full aspect-video object-contain bg-black"
+                    />
                     <button
-                      onClick={() => { setImagePreview(null); setResult(null); }}
+                      onClick={clearVideo}
                       className="absolute top-3 right-3 w-8 h-8 rounded-full bg-background/80 flex items-center justify-center border border-border"
                     >
                       <X size={14} />
                     </button>
                   </div>
-                  <Button variant="hero" className="w-full" onClick={analyzeImage} disabled={isAnalyzing}>
+                  <Button variant="hero" className="w-full" onClick={analyzeVideo} disabled={isAnalyzing}>
                     {isAnalyzing ? (
-                      <><Loader2 size={16} className="animate-spin" /> Analyzing with AI...</>
+                      <><Loader2 size={16} className="animate-spin" /> Analyzing your video...</>
                     ) : (
                       <><Target size={16} /> Analyze My {analysisType.charAt(0).toUpperCase() + analysisType.slice(1)}</>
                     )}
@@ -389,15 +468,12 @@ const Analyze = () => {
                       <p className="text-sm font-body text-foreground">
                         🏆 You're already ahead of 90% of players by analyzing your form. Keep pushing!
                       </p>
-                      <p className="text-xs text-muted-foreground font-body">
-                        Want to improve? Start with form shooting basics →
-                      </p>
                       <Button variant="outline" size="sm" className="gap-1" onClick={() => document.querySelector<HTMLButtonElement>('[data-coach-btn]')?.click()}>
                         <MessageCircle size={14} /> Chat with your coach about these results
                       </Button>
                     </div>
-                    <Button variant="outline" className="w-full" onClick={() => { setImagePreview(null); setResult(null); }}>
-                      <ArrowLeft size={16} /> Analyze Another
+                    <Button variant="outline" className="w-full" onClick={clearVideo}>
+                      <ArrowLeft size={16} /> Analyze Another Video
                     </Button>
                   </>
                 )}
