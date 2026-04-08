@@ -11,11 +11,19 @@ serve(async (req) => {
   }
 
   try {
-    const { imageBase64, analysisType } = await req.json();
+    const body = await req.json();
+    // Support both legacy single-image and new multi-frame
+    const { imageBase64, frames, analysisType } = body;
 
-    if (!imageBase64) {
+    const imageList: string[] = frames && frames.length > 0
+      ? frames
+      : imageBase64
+        ? [imageBase64]
+        : [];
+
+    if (imageList.length === 0) {
       return new Response(
-        JSON.stringify({ error: "No image data provided" }),
+        JSON.stringify({ error: "No video frames provided" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -28,7 +36,9 @@ serve(async (req) => {
       );
     }
 
-    const systemPrompt = `You are an elite basketball coach and biomechanics analyst. The user has uploaded a frame from their basketball training video. Analyze what you see and provide detailed, actionable coaching feedback.
+    const frameWord = imageList.length > 1 ? `${imageList.length} frames` : "a frame";
+
+    const systemPrompt = `You are an elite basketball coach and biomechanics analyst. The user has uploaded ${frameWord} from their basketball training video. Analyze the motion across these frames to understand their technique and movement patterns.
 
 Analysis type: ${analysisType || "general"}
 
@@ -38,19 +48,36 @@ Respond with a JSON object using this exact structure:
   "summary": "<1-2 sentence overall assessment>",
   "strengths": ["<strength 1>", "<strength 2>", "<strength 3>"],
   "corrections": [
-    {"area": "<body part/technique>", "issue": "<what's wrong>", "fix": "<specific correction>", "priority": "high|medium|low"},
-    ...
+    {"area": "<body part/technique>", "issue": "<what's wrong>", "fix": "<specific correction>", "priority": "high|medium|low"}
   ],
   "drillRecommendations": ["<drill name 1>", "<drill name 2>", "<drill name 3>"],
   "detailedNotes": "<paragraph with detailed biomechanical analysis>"
 }
 
 Focus on:
-- For shooting: release angle, elbow alignment, follow-through, balance, arc, footwork
-- For dribbling: hand position, ball height, body posture, head position, speed
-- For footwork: stance width, weight distribution, pivot technique, defensive positioning
+- For shooting: release angle, elbow alignment, follow-through, balance, arc, footwork, shot pocket
+- For dribbling: hand position, ball height, body posture, head position, speed, crossover technique
+- For footwork: stance width, weight distribution, pivot technique, first step quickness
+- For defense: stance, hand placement, lateral movement, hip position, closeout technique
 
-Be specific and constructive. Reference body mechanics using proper terminology.`;
+Analyze the sequence of frames to understand the full motion, not just a single snapshot. Be specific and constructive. Reference body mechanics using proper terminology.`;
+
+    // Build the content array with text + all frames
+    const content: any[] = [
+      {
+        type: "text",
+        text: `Analyze this basketball ${analysisType || "training"} video (${frameWord} extracted). Provide detailed coaching feedback in the JSON format specified.`,
+      },
+    ];
+
+    for (const frame of imageList) {
+      content.push({
+        type: "image_url",
+        image_url: {
+          url: `data:image/jpeg;base64,${frame}`,
+        },
+      });
+    }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -62,21 +89,7 @@ Be specific and constructive. Reference body mechanics using proper terminology.
         model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
-          {
-            role: "user",
-            content: [
-              {
-                type: "text",
-                text: `Analyze this basketball ${analysisType || "training"} frame and provide detailed coaching feedback in the JSON format specified.`,
-              },
-              {
-                type: "image_url",
-                image_url: {
-                  url: `data:image/jpeg;base64,${imageBase64}`,
-                },
-              },
-            ],
-          },
+          { role: "user", content },
         ],
       }),
     });
@@ -103,25 +116,24 @@ Be specific and constructive. Reference body mechanics using proper terminology.
     }
 
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || "";
+    const contentText = data.choices?.[0]?.message?.content || "";
 
-    // Extract JSON from the response
     let analysis;
     try {
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      const jsonMatch = contentText.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         analysis = JSON.parse(jsonMatch[0]);
       } else {
-        analysis = JSON.parse(content);
+        analysis = JSON.parse(contentText);
       }
     } catch {
       analysis = {
         overallScore: 70,
-        summary: content.substring(0, 200),
+        summary: contentText.substring(0, 200),
         strengths: ["Analysis completed"],
         corrections: [{ area: "General", issue: "See detailed notes", fix: "Review the full analysis", priority: "medium" }],
         drillRecommendations: ["Form Shooting", "Defensive Slides"],
-        detailedNotes: content,
+        detailedNotes: contentText,
       };
     }
 
