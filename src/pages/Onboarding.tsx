@@ -37,8 +37,10 @@ const SESSION_LABELS: Record<number, string> = {
   30: '🏃 Solid warmup',
   45: '💪 Real work',
   60: '🔥 Pro grind',
-  75: '🐍 Elite hours',
-  90: '🏆 Mamba hours',
+  90: '🐍 Elite hours',
+  120: '🏆 Mamba hours',
+  150: '👑 All day grind',
+  180: '🔱 No limits',
 };
 
 const getSessionLabel = (mins: number) => {
@@ -177,13 +179,13 @@ const Onboarding = () => {
                     value={[sessionLength]}
                     onValueChange={([v]) => setSessionLength(v)}
                     min={15}
-                    max={90}
+                    max={180}
                     step={15}
                     className="w-full"
                   />
                   <div className="flex justify-between text-[10px] text-muted-foreground font-body">
                     <span>15 min</span>
-                    <span>90 min</span>
+                    <span>3 hrs</span>
                   </div>
                   <p className="text-center text-xs font-body text-primary/80">{getSessionLabel(sessionLength)}</p>
                 </div>
