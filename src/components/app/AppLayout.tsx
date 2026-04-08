@@ -28,7 +28,7 @@ type Msg = { role: "user" | "assistant"; content: string };
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/coach-chat`;
 
 const COACHES: { id: CoachStyle; name: string; emoji: string }[] = [
-  { id: 'mamba', name: 'Marcus', emoji: '🐍' },
+  { id: 'mamba', name: 'Marcus', emoji: '🔥' },
   { id: 'queen', name: 'Aaliyah', emoji: '👑' },
   { id: 'chef', name: 'Jordan', emoji: '🍳' },
   { id: 'big_t', name: 'Tanya', emoji: '🎙️' },
