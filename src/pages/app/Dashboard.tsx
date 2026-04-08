@@ -29,7 +29,7 @@ const ACHIEVEMENTS_MAP: Record<string, { title: string; icon: string }> = {
 const COACH_TIPS: Record<CoachStyle, string[]> = {
   mamba: [
     "No excuses today. Get to the court and put in the work. Form shooting first — always.",
-    "You think one workout is enough? Do it again. Mamba Mentality.",
+    "You think one workout is enough? Do it again.",
     "Discipline beats motivation every single day. Show up.",
   ],
   queen: [

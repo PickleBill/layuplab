@@ -38,7 +38,7 @@ const SESSION_LABELS: Record<number, string> = {
   45: '💪 Real work',
   60: '🔥 Pro grind',
   90: '🐍 Elite hours',
-  120: '🏆 Mamba hours',
+  120: '🏆 Beast mode',
   150: '👑 All day grind',
   180: '🔱 No limits',
 };
