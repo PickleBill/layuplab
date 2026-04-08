@@ -10,7 +10,7 @@ export type Goal = 'shooting' | 'ball_handling' | 'speed_agility' | 'conditionin
 
 export type Equipment = 'hoop' | 'cones' | 'resistance_band' | 'jump_rope' | 'none';
 
-export type DrillCategory = 'shooting' | 'dribbling' | 'footwork' | 'conditioning' | 'agility';
+export type DrillCategory = 'warm_up' | 'shooting' | 'dribbling' | 'footwork' | 'conditioning' | 'agility' | 'defense';
 
 export type Difficulty = 1 | 2 | 3;
 
