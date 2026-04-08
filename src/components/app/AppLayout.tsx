@@ -28,11 +28,11 @@ type Msg = { role: "user" | "assistant"; content: string };
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/coach-chat`;
 
 const COACHES: { id: CoachStyle; name: string; emoji: string }[] = [
-  { id: 'kobe', name: 'Kobe', emoji: '🐍' },
-  { id: 'lebron', name: 'LeBron', emoji: '👑' },
-  { id: 'curry', name: 'Steph', emoji: '🍳' },
-  { id: 'sir_charles', name: 'Barkley', emoji: '🎙️' },
-  { id: 'phil', name: 'Phil', emoji: '🧘' },
+  { id: 'mamba', name: 'Marcus', emoji: '🐍' },
+  { id: 'queen', name: 'Aaliyah', emoji: '👑' },
+  { id: 'chef', name: 'Jordan', emoji: '🍳' },
+  { id: 'big_t', name: 'Tanya', emoji: '🎙️' },
+  { id: 'zen', name: 'Maya', emoji: '🧘' },
 ];
 
 const AppLayout = () => {

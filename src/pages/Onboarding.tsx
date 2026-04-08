@@ -88,7 +88,7 @@ const Onboarding = () => {
       username: username.trim(),
       skillLevel: commitmentToSkill(commitment),
       commitmentLevel: commitment,
-      coachStyle: 'kobe',
+      coachStyle: 'mamba',
       tier: 'prove_it',
       goals: selectedGoals.length > 0 ? selectedGoals : ['overall'],
       equipment: ['none', 'hoop'],

@@ -35,7 +35,7 @@ export function saveProfile(profile: PlayerProfile): void {
 }
 
 export function getCoachStyle(): CoachStyle {
-  return getProfile()?.coachStyle || 'kobe';
+  return getProfile()?.coachStyle || 'mamba';
 }
 
 // Stats

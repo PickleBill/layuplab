@@ -27,27 +27,27 @@ const ACHIEVEMENTS_MAP: Record<string, { title: string; icon: string }> = {
 };
 
 const COACH_TIPS: Record<CoachStyle, string[]> = {
-  kobe: [
+  mamba: [
     "No excuses today. Get to the court and put in the work. Form shooting first — always.",
     "You think one workout is enough? Do it again. Mamba Mentality.",
     "Discipline beats motivation every single day. Show up.",
   ],
-  lebron: [
+  queen: [
     "Every rep counts! Even 10 minutes of form shooting today puts you ahead. 🏀",
     "Build your game systematically. What's your weakest link today?",
     "Small wins stack up. Trust the process.",
   ],
-  curry: [
+  chef: [
     "Shooting is an art — let's find your rhythm today! 🎯",
-    "Remember: I started with form shots too. Keep going!",
+    "Remember: form shots are where greatness starts. Keep going!",
     "Have fun out there. The best players love the work.",
   ],
-  sir_charles: [
-    "That jumper is turrible. Let me fix it. Get to the court!",
+  big_t: [
+    "That jumper needs work. Let me fix it. Get to the court!",
     "Stop making excuses. Effort matters!",
-    "You know what's turrible? Not practicing. Get out there!",
+    "You know what's bad? Not practicing. Get out there!",
   ],
-  phil: [
+  zen: [
     "Focus on your breathing before each shot. The mind leads the body.",
     "Basketball is a dance, not a fight. Find your flow today.",
     "Practice with intention. The strength of your game is built in stillness.",
@@ -100,7 +100,7 @@ const Dashboard = () => {
   const completedDays = sessions.filter(s => new Date(s.date) >= weekStart).length;
 
   const coachStyle = getCoachStyle();
-  const tips = COACH_TIPS[coachStyle] || COACH_TIPS['kobe'];
+  const tips = COACH_TIPS[coachStyle] || COACH_TIPS['mamba'];
   const tipIndex = Math.floor(Date.now() / 86400000) % tips.length;
 
   const analysisCount = getAnalysisHistory().length;
@@ -338,7 +338,7 @@ const Dashboard = () => {
             <p className="font-display font-bold text-xs text-foreground mb-0.5">
               Coach's Tip
               <span className="text-[10px] text-muted-foreground font-body ml-1.5">
-                ({coachStyle === 'kobe' ? 'Kobe' : coachStyle === 'lebron' ? 'LeBron' : coachStyle === 'curry' ? 'Curry' : coachStyle === 'sir_charles' ? 'Barkley' : 'Phil'})
+                ({coachStyle === 'mamba' ? 'Marcus' : coachStyle === 'queen' ? 'Aaliyah' : coachStyle === 'chef' ? 'Jordan' : coachStyle === 'big_t' ? 'Tanya' : 'Maya'})
               </span>
             </p>
             <p className="text-xs text-muted-foreground font-body">{tips[tipIndex]}</p>
