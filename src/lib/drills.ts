@@ -1,6 +1,13 @@
 import { Drill } from '@/types/app';
 
 export const drills: Drill[] = [
+  // === WARM-UP ===
+  { id: 'w1', name: 'Jog Up & Down Court', category: 'warm_up', difficulty: 1, duration: 120, equipment: ['none'], description: 'Light jog up and down the court 4 times to get your blood flowing.', tip: 'Keep a relaxed pace — this is about warming up your muscles, not sprinting.', skillLevel: ['beginner', 'intermediate', 'advanced'], videoUrl: 'https://www.youtube.com/watch?v=VU8A-eVOdqI' },
+  { id: 'w2', name: 'High Knees', category: 'warm_up', difficulty: 1, duration: 60, equipment: ['none'], description: 'Drive your knees up to hip height while pumping your arms. 30 seconds x 2 sets.', tip: 'Stay on the balls of your feet and keep your core tight.', skillLevel: ['beginner', 'intermediate', 'advanced'], videoUrl: 'https://www.youtube.com/watch?v=jF-EvXoEi2I' },
+  { id: 'w3', name: 'Butt Kicks', category: 'warm_up', difficulty: 1, duration: 60, equipment: ['none'], description: 'Kick your heels up to your glutes while jogging in place. 30 seconds x 2 sets.', tip: 'Keep your thighs perpendicular to the ground — speed comes from the hamstrings.', skillLevel: ['beginner', 'intermediate', 'advanced'], videoUrl: 'https://www.youtube.com/watch?v=jF-EvXoEi2I' },
+  { id: 'w4', name: 'Arm Circles & Shoulder Rolls', category: 'warm_up', difficulty: 1, duration: 60, equipment: ['none'], description: 'Small circles forward and backward, then shoulder rolls. Loosen up the upper body.', tip: 'Gradually make the circles bigger to open up your range of motion.', skillLevel: ['beginner', 'intermediate', 'advanced'], videoUrl: 'https://www.youtube.com/watch?v=VU8A-eVOdqI' },
+  { id: 'w5', name: 'Dynamic Leg Swings', category: 'warm_up', difficulty: 1, duration: 60, equipment: ['none'], description: 'Front-to-back and side-to-side leg swings, 10 each leg.', tip: 'Hold onto something for balance and let your leg swing freely.', skillLevel: ['beginner', 'intermediate', 'advanced'], videoUrl: 'https://www.youtube.com/watch?v=VU8A-eVOdqI' },
+
   // === SHOOTING ===
   { id: 's1', name: 'Form Shooting', category: 'shooting', difficulty: 1, duration: 300, reps: 50, equipment: ['hoop'], description: 'Close-range one-hand form shots focusing on wrist snap and follow-through.', tip: 'Keep your elbow under the ball and flick your wrist like reaching into a cookie jar on a high shelf.', skillLevel: ['beginner', 'intermediate', 'advanced'], videoUrl: 'https://www.youtube.com/watch?v=WTkGA3yBs5k' },
   { id: 's2', name: 'Free Throw Routine', category: 'shooting', difficulty: 1, duration: 600, reps: 30, equipment: ['hoop'], description: 'Shoot 30 free throws with a consistent pre-shot routine.', tip: 'Develop a rhythm: dribble twice, spin the ball, bend knees, shoot. Same routine every time.', skillLevel: ['beginner', 'intermediate', 'advanced'], videoUrl: 'https://www.youtube.com/watch?v=GWbtqvSHnKo' },
@@ -36,6 +43,16 @@ export const drills: Drill[] = [
   { id: 'f8', name: 'Spin Move Footwork', category: 'footwork', difficulty: 3, duration: 360, equipment: ['hoop'], description: 'Practice spin moves into the lane from both wings. Focus on keeping the ball tight.', tip: 'Plant your inside foot, reverse pivot 180°, and explode to the rim. Ball stays on your hip.', skillLevel: ['advanced'], videoUrl: 'https://www.youtube.com/watch?v=VU8A-eVOdqI' },
   { id: 'f9', name: 'Step-Back Jumper Footwork', category: 'footwork', difficulty: 3, duration: 360, equipment: ['hoop'], description: 'Practice step-back moves from the mid-range. Focus on creating space.', tip: 'Push off your front foot explosively. Land balanced with feet shoulder-width apart.', skillLevel: ['advanced'], videoUrl: 'https://www.youtube.com/watch?v=VU8A-eVOdqI' },
   { id: 'f10', name: 'Box Jump to Sprint', category: 'footwork', difficulty: 2, duration: 300, equipment: ['none'], description: 'Perform 3 squat jumps, then immediately sprint 10 yards. 5 sets.', tip: 'Land softly with bent knees, then explode into your sprint. Quick transition is key.', skillLevel: ['intermediate', 'advanced'], videoUrl: 'https://www.youtube.com/watch?v=VU8A-eVOdqI' },
+
+  // === DEFENSE ===
+  { id: 'def1', name: 'Defensive Stance Holds', category: 'defense', difficulty: 1, duration: 180, equipment: ['none'], description: 'Get in a low defensive stance. Hold for 30 seconds, rest 10. 4 rounds. Build the base.', tip: 'Butt down, chest up, hands active. Your legs will burn — that means it\'s working.', skillLevel: ['beginner', 'intermediate', 'advanced'], videoUrl: 'https://www.youtube.com/watch?v=4MJAsNiEPJA' },
+  { id: 'def2', name: 'Closeout & Contest', category: 'defense', difficulty: 2, duration: 300, equipment: ['cones'], description: 'Sprint to a cone (the "shooter"), closeout with choppy steps, then contest with a hand up.', tip: 'Don\'t fly by. Chop your feet and get a hand up without fouling.', skillLevel: ['intermediate', 'advanced'], videoUrl: 'https://www.youtube.com/watch?v=4MJAsNiEPJA' },
+  { id: 'def3', name: '1-on-1 Shadow Defense', category: 'defense', difficulty: 2, duration: 300, equipment: ['none'], description: 'Mirror an imaginary ball handler. React to drives left and right, stay in front.', tip: 'Lead with your chest, not your feet. Anticipate the crossover.', skillLevel: ['beginner', 'intermediate', 'advanced'], videoUrl: 'https://www.youtube.com/watch?v=4MJAsNiEPJA' },
+  { id: 'def4', name: 'Help & Recover Drill', category: 'defense', difficulty: 2, duration: 360, equipment: ['cones'], description: 'Start on-ball, slide to help position, then recover back to your man. 5 sets each side.', tip: 'Keep your eyes on both the ball and your man. Recover with urgency.', skillLevel: ['intermediate', 'advanced'], videoUrl: 'https://www.youtube.com/watch?v=4MJAsNiEPJA' },
+  { id: 'def5', name: 'Zig-Zag Defensive Slides', category: 'defense', difficulty: 1, duration: 240, equipment: ['none'], description: 'Slide diagonally across the court in a zig-zag pattern. Stay low the whole time.', tip: 'Push off the outside foot. Never cross your feet or stand up.', skillLevel: ['beginner', 'intermediate', 'advanced'], videoUrl: 'https://www.youtube.com/watch?v=4MJAsNiEPJA' },
+  { id: 'def6', name: 'Box-Out & Rebound', category: 'defense', difficulty: 2, duration: 300, equipment: ['hoop'], description: 'Practice boxing out an imaginary player, then go grab the rebound aggressively. 10 reps each side.', tip: 'Make contact first, then find the ball. The box-out is more important than the jump.', skillLevel: ['beginner', 'intermediate', 'advanced'], videoUrl: 'https://www.youtube.com/watch?v=VU8A-eVOdqI' },
+  { id: 'def7', name: 'Deny & Deflect', category: 'defense', difficulty: 3, duration: 300, equipment: ['none'], description: 'Practice denying the pass in the passing lane. Active hands, quick feet, stay between man and ball.', tip: 'Keep one hand in the passing lane and your eyes on the passer\'s chest.', skillLevel: ['intermediate', 'advanced'], videoUrl: 'https://www.youtube.com/watch?v=4MJAsNiEPJA' },
+  { id: 'def8', name: 'Charge Drawing Drill', category: 'defense', difficulty: 3, duration: 240, equipment: ['none'], description: 'Practice setting your feet and taking a charge. Absorb contact, fall safely. 8 reps.', tip: 'Feet set, hands up, chin tucked. Fall backwards on your butt, not your hands.', skillLevel: ['advanced'], videoUrl: 'https://www.youtube.com/watch?v=4MJAsNiEPJA' },
 
   // === CONDITIONING ===
   { id: 'c1', name: 'Suicide Sprints', category: 'conditioning', difficulty: 2, duration: 600, equipment: ['none'], description: 'Classic suicide sprints: free throw line, half court, far free throw, full court. 5 sets.', tip: 'Touch the line with your hand every time. Bend at the hips, not the waist, to decelerate.', skillLevel: ['beginner', 'intermediate', 'advanced'], videoUrl: 'https://www.youtube.com/watch?v=jF-EvXoEi2I' },
@@ -76,9 +93,14 @@ export function getFilteredDrills(
   category?: Drill['category']
 ): Drill[] {
   return drills.filter(d => {
+    if (d.category === 'warm_up') return false; // warm-ups handled separately
     if (!d.skillLevel.includes(skillLevel)) return false;
     if (d.equipment.some(e => e !== 'none' && !equipment.includes(e))) return false;
     if (category && d.category !== category) return false;
     return true;
   });
+}
+
+export function getWarmUpDrills(skillLevel?: string): Drill[] {
+  return drills.filter(d => d.category === 'warm_up');
 }
