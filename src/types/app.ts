@@ -110,7 +110,7 @@ export interface Achievement {
 export interface AnalysisRecord {
   id: string;
   date: string;
-  analysisType: 'shooting' | 'dribbling' | 'footwork';
+  analysisType: 'shooting' | 'dribbling' | 'footwork' | 'defense';
   thumbnailDataUrl: string;
   overallScore: number;
   summary: string;
