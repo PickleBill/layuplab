@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { NotificationProvider } from "@/components/app/NotificationProvider";
+import PremiumGate from "@/components/app/PremiumGate";
 import Index from "./pages/Index.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import Onboarding from "./pages/Onboarding.tsx";
@@ -36,9 +37,9 @@ const App = () => (
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="train" element={<Train />} />
               <Route path="drills" element={<DrillLibrary />} />
-              <Route path="plan" element={<Plan />} />
+              <Route path="plan" element={<PremiumGate feature="Weekly Plans"><Plan /></PremiumGate>} />
               <Route path="progress" element={<Progress />} />
-              <Route path="analyze" element={<Analyze />} />
+              <Route path="analyze" element={<PremiumGate feature="Video Analysis"><Analyze /></PremiumGate>} />
               <Route path="challenges" element={<Challenges />} />
               <Route path="leaderboard" element={<Leaderboard />} />
             </Route>

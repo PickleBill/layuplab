@@ -17,14 +17,17 @@ const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  const redirectUser = async (userId: string) => {
+    const { data } = await supabase.from("player_profiles").select("id").eq("user_id", userId).maybeSingle();
+    navigate(data ? "/app/dashboard" : "/onboarding");
+  };
+
   useEffect(() => {
-    supabase.auth.onAuthStateChange((event, session) => {
-      if (session) {
-        navigate("/onboarding");
-      }
+    supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) redirectUser(session.user.id);
     });
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) navigate("/onboarding");
+      if (session) redirectUser(session.user.id);
     });
   }, [navigate]);
 
@@ -140,10 +143,6 @@ const Auth = () => {
           </button>
         </p>
 
-        {/* Skip for local-only mode */}
-        <button onClick={() => navigate("/onboarding")} className="block w-full text-center text-[10px] text-muted-foreground/60 font-body hover:text-muted-foreground transition-colors">
-          Continue without account →
-        </button>
       </div>
     </div>
   );

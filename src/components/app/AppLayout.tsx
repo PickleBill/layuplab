@@ -1,4 +1,5 @@
 import { Outlet, useNavigate } from "react-router-dom";
+import TrialBanner from "@/components/app/TrialBanner";
 import { useState, useRef, useEffect } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { LayoutDashboard, Dumbbell, BookOpen, Calendar, BarChart3, Video, Trophy, Users, MessageCircle, X, Send, LogOut } from "lucide-react";
@@ -243,6 +244,9 @@ const AppLayout = () => {
       {/* Main Content */}
       <main className={`flex-1 ${!isMobile ? 'ml-64' : ''} ${isMobile ? 'pb-20' : ''}`}>
         <XpBar />
+        <div className="px-4 pt-2">
+          <TrialBanner />
+        </div>
         <Outlet />
       </main>
 

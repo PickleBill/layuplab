@@ -7,6 +7,7 @@ import { Slider } from "@/components/ui/slider";
 import { PlayerProfile, CommitmentLevel, Goal, DayOfWeek } from "@/types/app";
 import { saveProfile, saveStats, getDefaultStats, savePlan } from "@/lib/storage";
 import { generateWeeklyPlan } from "@/lib/plan-generator";
+import { syncProfileToCloud, syncStatsToCloud, syncPlanToCloud } from "@/lib/cloud-sync";
 
 const COMMITMENT_LEVELS: { value: CommitmentLevel; label: string; desc: string; emoji: string }[] = [
   { value: 'starting', emoji: '🌱', label: 'Just getting started', desc: "Learn the right way from day one" },
@@ -98,9 +99,16 @@ const Onboarding = () => {
       createdAt: new Date().toISOString(),
     };
     saveProfile(profile);
-    saveStats(getDefaultStats());
+    const stats = getDefaultStats();
+    saveStats(stats);
     const plan = generateWeeklyPlan(profile);
     savePlan(plan);
+
+    // Sync to cloud (non-blocking)
+    syncProfileToCloud(profile).catch(console.error);
+    syncStatsToCloud(stats).catch(console.error);
+    syncPlanToCloud(plan).catch(console.error);
+
     navigate("/app/dashboard");
   };
 
