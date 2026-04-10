@@ -20,11 +20,12 @@ const Auth = () => {
   useEffect(() => {
     supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
-        navigate("/onboarding");
+        // Returning user → go to dashboard; new user → onboarding
+        navigate("/app/dashboard");
       }
     });
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) navigate("/onboarding");
+      if (session) navigate("/app/dashboard");
     });
   }, [navigate]);
 
@@ -140,10 +141,6 @@ const Auth = () => {
           </button>
         </p>
 
-        {/* Skip for local-only mode */}
-        <button onClick={() => navigate("/onboarding")} className="block w-full text-center text-[10px] text-muted-foreground/60 font-body hover:text-muted-foreground transition-colors">
-          Continue without account →
-        </button>
       </div>
     </div>
   );
