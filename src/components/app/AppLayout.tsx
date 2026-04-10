@@ -217,6 +217,8 @@ const AppLayout = () => {
 
   const currentCoach = COACHES.find(c => c.id === activeCoach) || COACHES[0];
 
+  if (!authReady) return null;
+
   return (
     <div className="min-h-screen bg-background flex">
       {/* Desktop Sidebar */}
