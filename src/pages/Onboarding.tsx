@@ -95,6 +95,8 @@ const Onboarding = () => {
 
   if (!authChecked) return null;
 
+  const canGo = username.trim().length >= 2 && commitment !== null;
+
   const toggleGoal = (g: Goal) => {
     setSelectedGoals(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g]);
   };
