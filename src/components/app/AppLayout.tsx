@@ -39,6 +39,7 @@ const COACHES: { id: CoachStyle; name: string; emoji: string }[] = [
 const AppLayout = () => {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
+  const [authReady, setAuthReady] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
@@ -47,6 +48,17 @@ const AppLayout = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const hasSynced = useRef(false);
+
+  // Auth guard
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) {
+        navigate("/auth", { replace: true });
+      } else {
+        setAuthReady(true);
+      }
+    });
+  }, [navigate]);
 
   useEffect(() => {
     if (scrollRef.current) {
