@@ -62,12 +62,33 @@ const commitmentToSkill = (c: CommitmentLevel) => {
 
 const Onboarding = () => {
   const navigate = useNavigate();
+  const [authChecked, setAuthChecked] = useState(false);
   const [username, setUsername] = useState("");
   const [commitment, setCommitment] = useState<CommitmentLevel | null>(null);
   const [showCustomize, setShowCustomize] = useState(false);
   const [sessionLength, setSessionLength] = useState(45);
   const [selectedGoals, setSelectedGoals] = useState<Goal[]>([]);
   const [selectedDays, setSelectedDays] = useState<DayOfWeek[]>(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']);
+
+  // Auth guard: must be logged in
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) {
+        navigate("/auth", { replace: true });
+      } else {
+        // If user already has a profile, skip to dashboard
+        supabase.from("player_profiles").select("id").eq("user_id", session.user.id).maybeSingle().then(({ data }) => {
+          if (data) {
+            navigate("/app/dashboard", { replace: true });
+          } else {
+            setAuthChecked(true);
+          }
+        });
+      }
+    });
+  }, [navigate]);
+
+  if (!authChecked) return null;
 
   const canGo = username.trim().length >= 2 && commitment !== null;
 
