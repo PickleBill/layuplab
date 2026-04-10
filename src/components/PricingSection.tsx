@@ -124,7 +124,7 @@ const PricingSection = () => {
                 variant={tier.highlighted ? "hero" : "outline"}
                 size="lg"
                 className="w-full"
-                onClick={() => window.location.href = '/onboarding'}
+                onClick={() => window.location.href = '/auth'}
               >
                 {tier.cta}
               </Button>

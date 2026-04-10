@@ -17,7 +17,7 @@ const Navbar = () => {
           <a href="#how-it-works" className="text-sm text-muted-foreground hover:text-foreground transition-colors font-body">How It Works</a>
           <a href="#pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors font-body">Pricing</a>
           <a href="#testimonials" className="text-sm text-muted-foreground hover:text-foreground transition-colors font-body">Results</a>
-          <Button variant="hero" size="sm" onClick={() => window.location.href = '/onboarding'}>Get Started</Button>
+          <Button variant="hero" size="sm" onClick={() => window.location.href = '/auth'}>Get Started</Button>
         </div>
 
         <button
@@ -34,7 +34,7 @@ const Navbar = () => {
           <a href="#how-it-works" className="block text-sm text-muted-foreground hover:text-foreground font-body">How It Works</a>
           <a href="#pricing" className="block text-sm text-muted-foreground hover:text-foreground font-body">Pricing</a>
           <a href="#testimonials" className="block text-sm text-muted-foreground hover:text-foreground font-body">Results</a>
-          <Button variant="hero" size="default" className="w-full" onClick={() => window.location.href = '/onboarding'}>Get Started</Button>
+          <Button variant="hero" size="default" className="w-full" onClick={() => window.location.href = '/auth'}>Get Started</Button>
         </div>
       )}
     </nav>

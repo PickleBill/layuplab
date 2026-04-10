@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { supabase } from "@/integrations/supabase/client";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -61,6 +62,7 @@ const commitmentToSkill = (c: CommitmentLevel) => {
 
 const Onboarding = () => {
   const navigate = useNavigate();
+  const [authChecked, setAuthChecked] = useState(false);
   const [username, setUsername] = useState("");
   const [commitment, setCommitment] = useState<CommitmentLevel | null>(null);
   const [showCustomize, setShowCustomize] = useState(false);
@@ -68,12 +70,32 @@ const Onboarding = () => {
   const [selectedGoals, setSelectedGoals] = useState<Goal[]>([]);
   const [selectedDays, setSelectedDays] = useState<DayOfWeek[]>(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']);
 
-  const canGo = username.trim().length >= 2 && commitment !== null;
+  // Auth guard: must be logged in
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) {
+        navigate("/auth", { replace: true });
+      } else {
+        // If user already has a profile, skip to dashboard
+        supabase.from("player_profiles").select("id").eq("user_id", session.user.id).maybeSingle().then(({ data }) => {
+          if (data) {
+            navigate("/app/dashboard", { replace: true });
+          } else {
+            setAuthChecked(true);
+          }
+        });
+      }
+    });
+  }, [navigate]);
 
   // Auto-expand customization when commitment is selected
   useEffect(() => {
     if (commitment) setShowCustomize(true);
   }, [commitment]);
+
+  if (!authChecked) return null;
+
+  const canGo = username.trim().length >= 2 && commitment !== null;
 
   const toggleGoal = (g: Goal) => {
     setSelectedGoals(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g]);
