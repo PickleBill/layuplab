@@ -73,8 +73,10 @@ export type Database = {
           id: string
           session_length: number
           skill_level: string
+          subscription_status: string
           tier: string
           training_days: string[] | null
+          trial_started_at: string
           updated_at: string
           user_id: string
           username: string
@@ -89,8 +91,10 @@ export type Database = {
           id?: string
           session_length?: number
           skill_level?: string
+          subscription_status?: string
           tier?: string
           training_days?: string[] | null
+          trial_started_at?: string
           updated_at?: string
           user_id: string
           username?: string
@@ -105,8 +109,10 @@ export type Database = {
           id?: string
           session_length?: number
           skill_level?: string
+          subscription_status?: string
           tier?: string
           training_days?: string[] | null
+          trial_started_at?: string
           updated_at?: string
           user_id?: string
           username?: string
