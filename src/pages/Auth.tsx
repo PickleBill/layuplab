@@ -17,15 +17,17 @@ const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  const redirectUser = async (userId: string) => {
+    const { data } = await supabase.from("player_profiles").select("id").eq("user_id", userId).maybeSingle();
+    navigate(data ? "/app/dashboard" : "/onboarding");
+  };
+
   useEffect(() => {
-    supabase.auth.onAuthStateChange((event, session) => {
-      if (session) {
-        // Returning user → go to dashboard; new user → onboarding
-        navigate("/app/dashboard");
-      }
+    supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) redirectUser(session.user.id);
     });
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) navigate("/app/dashboard");
+      if (session) redirectUser(session.user.id);
     });
   }, [navigate]);
 
