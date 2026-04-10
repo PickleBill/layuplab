@@ -88,14 +88,12 @@ const Onboarding = () => {
     });
   }, [navigate]);
 
-  if (!authChecked) return null;
-
-  const canGo = username.trim().length >= 2 && commitment !== null;
-
   // Auto-expand customization when commitment is selected
   useEffect(() => {
     if (commitment) setShowCustomize(true);
   }, [commitment]);
+
+  if (!authChecked) return null;
 
   const toggleGoal = (g: Goal) => {
     setSelectedGoals(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g]);
